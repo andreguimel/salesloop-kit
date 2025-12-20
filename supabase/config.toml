@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.validate-phones]
 verify_jwt = false
+
+[functions.search-by-cnae]
+verify_jwt = false
