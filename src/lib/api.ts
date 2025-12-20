@@ -47,6 +47,38 @@ export async function searchCompanyByCnpj(cnpj: string): Promise<SearchCompanyBy
   return data;
 }
 
+// Search Companies by CNAE via Nuvem Fiscal API
+export interface SearchByCnaeParams {
+  cnae: string;
+  municipio: string;
+  naturezaJuridica?: string;
+  top?: number;
+  skip?: number;
+}
+
+export interface SearchByCnaeResponse {
+  companies: SearchCompanyResult[];
+  total: number;
+  success: boolean;
+}
+
+export async function searchCompaniesByCnae(params: SearchByCnaeParams): Promise<SearchByCnaeResponse> {
+  const { data, error } = await supabase.functions.invoke('search-by-cnae', {
+    body: params,
+  });
+
+  if (error) {
+    console.error('Error searching companies by CNAE:', error);
+    throw new Error(error.message || 'Erro ao buscar empresas');
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
 // Companies
 export async function fetchCompanies() {
   const { data, error } = await supabase
