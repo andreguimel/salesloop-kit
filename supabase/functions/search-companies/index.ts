@@ -62,7 +62,7 @@ serve(async (req) => {
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        'x-api-key': CNPJWS_API_KEY,
+        'x_api_token': CNPJWS_API_KEY,
         'Content-Type': 'application/json',
       },
     });
