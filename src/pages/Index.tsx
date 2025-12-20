@@ -1,31 +1,112 @@
-import { useState, useMemo } from 'react';
-import { Building2, Phone, Send, TrendingUp } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Building2, Phone, Send, TrendingUp, Plus, Loader2 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { MetricCard } from '@/components/MetricCard';
 import { SearchForm } from '@/components/SearchForm';
 import { CompanyTable } from '@/components/CompanyTable';
 import { MessagePanel } from '@/components/MessagePanel';
-import { mockCompanies, mockTemplates } from '@/data/mockData';
+import { AddCompanyDialog } from '@/components/AddCompanyDialog';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  fetchCompanies, 
+  fetchTemplates, 
+  createTemplate, 
+  updateTemplate, 
+  deleteTemplate,
+  sendMessage,
+  fetchMetrics
+} from '@/lib/api';
 import { Company, MessageTemplate, SearchFilters } from '@/types';
 
+interface DbCompany {
+  id: string;
+  name: string;
+  cnae: string;
+  cnae_description: string | null;
+  city: string;
+  state: string;
+  segment: string | null;
+  company_phones: Array<{
+    id: string;
+    phone_number: string;
+    phone_type: string;
+    status: string;
+  }>;
+}
+
+interface DbTemplate {
+  id: string;
+  name: string;
+  content: string;
+  created_at: string;
+}
+
 const Index = () => {
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
-  const [templates, setTemplates] = useState<MessageTemplate[]>(mockTemplates);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [selectedPhones, setSelectedPhones] = useState<Record<string, string[]>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showAddCompany, setShowAddCompany] = useState(false);
+  const [metrics, setMetrics] = useState({ totalCompanies: 0, validPhones: 0, messagesSent: 0, pendingMessages: 0 });
+  
+  const { toast } = useToast();
 
-  // Calculate metrics
-  const metrics = useMemo(() => {
-    const totalCompanies = companies.length;
-    const validPhones = companies.reduce(
-      (acc, company) => acc + company.phones.filter((p) => p.status === 'valid').length,
-      0
-    );
-    const messagesSent = companies.filter((c) => c.messageStatus === 'sent').length;
-    const pendingMessages = companies.filter((c) => c.messageStatus === 'pending').length;
+  // Load data on mount
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    return { totalCompanies, validPhones, messagesSent, pendingMessages };
-  }, [companies]);
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [companiesData, templatesData, metricsData] = await Promise.all([
+        fetchCompanies(),
+        fetchTemplates(),
+        fetchMetrics(),
+      ]);
+
+      const mappedCompanies: Company[] = (companiesData as DbCompany[]).map((c) => ({
+        id: c.id,
+        name: c.name,
+        cnae: c.cnae,
+        cnaeDescription: c.cnae_description || '',
+        city: c.city,
+        state: c.state,
+        segment: c.segment || '',
+        phones: c.company_phones.map((p) => ({
+          id: p.id,
+          number: p.phone_number,
+          type: p.phone_type as 'mobile' | 'landline',
+          status: p.status as 'valid' | 'uncertain' | 'invalid' | 'pending',
+        })),
+        messageStatus: 'none' as const,
+      }));
+
+      const mappedTemplates: MessageTemplate[] = (templatesData as DbTemplate[]).map((t) => ({
+        id: t.id,
+        name: t.name,
+        content: t.content,
+        createdAt: new Date(t.created_at),
+      }));
+
+      setCompanies(mappedCompanies);
+      setFilteredCompanies(mappedCompanies);
+      setTemplates(mappedTemplates);
+      setMetrics(metricsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast({
+        title: 'Erro ao carregar dados',
+        description: 'Não foi possível carregar os dados. Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Count selected phones
   const selectedPhonesCount = useMemo(() => {
@@ -33,10 +114,10 @@ const Index = () => {
   }, [selectedPhones]);
 
   const handleSearch = (filters: SearchFilters) => {
-    setIsLoading(true);
+    setIsSearching(true);
     
     setTimeout(() => {
-      let filtered = [...mockCompanies];
+      let filtered = [...companies];
 
       if (filters.cnae) {
         filtered = filtered.filter((c) =>
@@ -50,9 +131,9 @@ const Index = () => {
         filtered = filtered.filter((c) => c.segment === filters.segment);
       }
 
-      setCompanies(filtered);
-      setIsLoading(false);
-    }, 800);
+      setFilteredCompanies(filtered);
+      setIsSearching(false);
+    }, 300);
   };
 
   const handleSelectPhones = (companyId: string, phones: string[]) => {
@@ -62,36 +143,111 @@ const Index = () => {
     }));
   };
 
-  const handleAddTemplate = (template: Omit<MessageTemplate, 'id' | 'createdAt'>) => {
-    const newTemplate: MessageTemplate = {
-      ...template,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-    };
-    setTemplates((prev) => [...prev, newTemplate]);
+  const handleAddTemplate = async (template: Omit<MessageTemplate, 'id' | 'createdAt'>) => {
+    try {
+      const newTemplate = await createTemplate(template);
+      setTemplates((prev) => [...prev, {
+        id: newTemplate.id,
+        name: newTemplate.name,
+        content: newTemplate.content,
+        createdAt: new Date(newTemplate.created_at),
+      }]);
+      toast({ title: 'Template criado!' });
+    } catch (error) {
+      toast({
+        title: 'Erro ao criar template',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleEditTemplate = (id: string, template: Omit<MessageTemplate, 'id' | 'createdAt'>) => {
-    setTemplates((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...template } : t))
-    );
+  const handleEditTemplate = async (id: string, template: Omit<MessageTemplate, 'id' | 'createdAt'>) => {
+    try {
+      await updateTemplate(id, template);
+      setTemplates((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, ...template } : t))
+      );
+      toast({ title: 'Template atualizado!' });
+    } catch (error) {
+      toast({
+        title: 'Erro ao atualizar template',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleDeleteTemplate = (id: string) => {
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      await deleteTemplate(id);
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      toast({ title: 'Template excluído!' });
+    } catch (error) {
+      toast({
+        title: 'Erro ao excluir template',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleSendMessages = (channel: 'whatsapp' | 'sms' | 'both', templateId: string) => {
-    setCompanies((prev) =>
-      prev.map((company) => {
-        if (selectedPhones[company.id]?.length > 0) {
-          return { ...company, messageStatus: 'sent' as const };
+  const handleSendMessages = async (channel: 'whatsapp' | 'sms' | 'both', templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    const channels: ('whatsapp' | 'sms')[] = channel === 'both' ? ['whatsapp', 'sms'] : [channel];
+    let sentCount = 0;
+
+    try {
+      for (const companyId of Object.keys(selectedPhones)) {
+        const phones = selectedPhones[companyId];
+        const company = companies.find(c => c.id === companyId);
+        
+        if (!company) continue;
+
+        for (const phoneNumber of phones) {
+          const phone = company.phones.find(p => p.number === phoneNumber);
+          if (!phone || !phone.id) continue;
+
+          for (const ch of channels) {
+            await sendMessage(companyId, phone.id, templateId, ch, template.content);
+            sentCount++;
+          }
         }
-        return company;
-      })
-    );
-    setSelectedPhones({});
+      }
+
+      toast({
+        title: 'Mensagens enviadas!',
+        description: `${sentCount} mensagem(ns) foram enviadas com sucesso.`,
+      });
+
+      // Refresh metrics
+      const metricsData = await fetchMetrics();
+      setMetrics(metricsData);
+
+      // Clear selections
+      setSelectedPhones({});
+    } catch (error) {
+      toast({
+        title: 'Erro ao enviar mensagens',
+        variant: 'destructive',
+      });
+    }
   };
+
+  const handleCompanyAdded = () => {
+    loadData();
+    setShowAddCompany(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -106,13 +262,22 @@ const Index = () => {
         
         <main className="container px-4 md:px-8 py-8 space-y-8">
           {/* Hero Section */}
-          <div className="space-y-3 animate-fade-up">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Prospecção <span className="text-gradient">Inteligente</span>
-            </h2>
-            <p className="text-muted-foreground max-w-xl">
-              Encontre empresas, valide telefones e envie mensagens automatizadas.
-            </p>
+          <div className="flex items-start justify-between">
+            <div className="space-y-3 animate-fade-up">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                Prospecção <span className="text-gradient">Inteligente</span>
+              </h2>
+              <p className="text-muted-foreground max-w-xl">
+                Encontre empresas, valide telefones e envie mensagens automatizadas.
+              </p>
+            </div>
+            <Button 
+              onClick={() => setShowAddCompany(true)}
+              className="gap-2 gradient-primary hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar Empresa
+            </Button>
           </div>
 
           {/* Metrics Dashboard */}
@@ -122,7 +287,6 @@ const Index = () => {
               value={metrics.totalCompanies}
               icon={Building2}
               variant="primary"
-              trend={{ value: 12, isPositive: true }}
               delay={0}
             />
             <MetricCard
@@ -130,7 +294,6 @@ const Index = () => {
               value={metrics.validPhones}
               icon={Phone}
               variant="accent"
-              trend={{ value: 8, isPositive: true }}
               delay={50}
             />
             <MetricCard
@@ -142,7 +305,7 @@ const Index = () => {
             />
             <MetricCard
               title="Taxa de Sucesso"
-              value={`${metrics.messagesSent > 0 ? Math.round((metrics.messagesSent / (metrics.messagesSent + metrics.pendingMessages)) * 100) : 0}%`}
+              value={`${metrics.messagesSent > 0 ? Math.round((metrics.messagesSent / (metrics.messagesSent + metrics.pendingMessages + 1)) * 100) : 0}%`}
               icon={TrendingUp}
               variant="default"
               delay={150}
@@ -150,12 +313,12 @@ const Index = () => {
           </div>
 
           {/* Search Form */}
-          <SearchForm onSearch={handleSearch} isLoading={isLoading} />
+          <SearchForm onSearch={handleSearch} isLoading={isSearching} />
 
           {/* Main Content Grid */}
           <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
             <CompanyTable
-              companies={companies}
+              companies={filteredCompanies}
               onSelectPhones={handleSelectPhones}
               selectedPhones={selectedPhones}
             />
@@ -179,6 +342,12 @@ const Index = () => {
           </div>
         </footer>
       </div>
+
+      <AddCompanyDialog 
+        open={showAddCompany} 
+        onOpenChange={setShowAddCompany}
+        onCompanyAdded={handleCompanyAdded}
+      />
     </div>
   );
 };

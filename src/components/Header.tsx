@@ -1,8 +1,28 @@
-import { Sparkles, Menu, Bell, User } from 'lucide-react';
+import { Sparkles, Menu, Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 export function Header() {
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: 'Até logo!',
+      description: 'Você foi desconectado com sucesso.',
+    });
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/30 glass">
       <div className="container flex h-16 items-center justify-between px-4 md:px-8">
@@ -33,9 +53,26 @@ export function Header() {
           <Button variant="ghost" size="icon" className="hidden md:flex text-muted-foreground hover:text-foreground">
             <Bell className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="hidden md:flex text-muted-foreground hover:text-foreground">
-            <User className="h-5 w-5" />
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="hidden md:flex text-muted-foreground hover:text-foreground">
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-card border-border">
+              <div className="px-2 py-2">
+                <p className="text-sm font-medium">{user?.email}</p>
+                <p className="text-xs text-muted-foreground">Conta ativa</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -43,7 +80,11 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[280px] glass-strong">
-              <nav className="flex flex-col gap-4 mt-8">
+              <div className="mt-4 mb-6">
+                <p className="text-sm font-medium">{user?.email}</p>
+                <p className="text-xs text-muted-foreground">Conta ativa</p>
+              </div>
+              <nav className="flex flex-col gap-4">
                 <a href="#" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
                   Dashboard
                 </a>
@@ -53,10 +94,15 @@ export function Header() {
                 <a href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                   Relatórios
                 </a>
-                <a href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                  Configurações
-                </a>
               </nav>
+              <Button 
+                variant="ghost" 
+                onClick={handleSignOut}
+                className="w-full justify-start text-destructive mt-8"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </Button>
             </SheetContent>
           </Sheet>
         </div>
