@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Search, Building2, MapPin, Phone as PhoneIcon, Loader2, Plus, Check } from 'lucide-react';
+import { Search, Building2, MapPin, Phone as PhoneIcon, Loader2, Plus, Check, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { searchCompaniesAPI, importCompanyFromSearch, SearchCompanyResult } from '@/lib/api';
 
@@ -31,6 +37,60 @@ const states = [
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
+// Popular CNAEs organized by segment
+const popularCnaes = {
+  'Comércio': [
+    { code: '4711-3/02', description: 'Comércio varejista de mercadorias em geral' },
+    { code: '4712-1/00', description: 'Comércio varejista de mercadorias em lojas de departamentos' },
+    { code: '4721-1/02', description: 'Padaria e confeitaria' },
+    { code: '4722-9/01', description: 'Comércio varejista de carnes - açougues' },
+    { code: '4744-0/05', description: 'Comércio varejista de materiais de construção' },
+    { code: '4751-2/01', description: 'Comércio varejista especializado de equipamentos de informática' },
+    { code: '4753-9/00', description: 'Comércio varejista de eletrodomésticos' },
+    { code: '4755-5/02', description: 'Comércio varejista de artigos de armarinho' },
+    { code: '4781-4/00', description: 'Comércio varejista de artigos do vestuário' },
+    { code: '4789-0/99', description: 'Comércio varejista de outros produtos' },
+  ],
+  'Serviços': [
+    { code: '6201-5/01', description: 'Desenvolvimento de programas de computador sob encomenda' },
+    { code: '6202-3/00', description: 'Desenvolvimento e licenciamento de software' },
+    { code: '6311-9/00', description: 'Tratamento de dados, provedores de hospedagem' },
+    { code: '7020-4/00', description: 'Atividades de consultoria em gestão empresarial' },
+    { code: '7111-1/00', description: 'Serviços de arquitetura' },
+    { code: '7112-0/00', description: 'Serviços de engenharia' },
+    { code: '7311-4/00', description: 'Agências de publicidade' },
+    { code: '7319-0/99', description: 'Outras atividades de publicidade' },
+    { code: '8599-6/04', description: 'Treinamento em desenvolvimento profissional' },
+    { code: '9609-2/99', description: 'Outras atividades de serviços pessoais' },
+  ],
+  'Alimentação': [
+    { code: '5611-2/01', description: 'Restaurantes e similares' },
+    { code: '5611-2/03', description: 'Lanchonetes, casas de chá, de sucos' },
+    { code: '5612-1/00', description: 'Serviços ambulantes de alimentação' },
+    { code: '5620-1/02', description: 'Serviços de alimentação para eventos' },
+    { code: '5620-1/04', description: 'Fornecimento de alimentos preparados (marmitex)' },
+  ],
+  'Saúde': [
+    { code: '8630-5/01', description: 'Atividade médica ambulatorial' },
+    { code: '8630-5/02', description: 'Atividade médica ambulatorial especializada' },
+    { code: '8630-5/03', description: 'Atividade médica ambulatorial (cirurgia)' },
+    { code: '8630-5/04', description: 'Atividade odontológica' },
+    { code: '8650-0/99', description: 'Atividades de profissionais da saúde' },
+  ],
+  'Beleza': [
+    { code: '9602-5/01', description: 'Cabeleireiros, manicure e pedicure' },
+    { code: '9602-5/02', description: 'Atividades de estética e outros serviços de beleza' },
+    { code: '9609-2/04', description: 'Saunas e banhos' },
+  ],
+  'Construção': [
+    { code: '4120-4/00', description: 'Construção de edifícios' },
+    { code: '4330-4/02', description: 'Instalação de portas, janelas e similares' },
+    { code: '4330-4/03', description: 'Obras de acabamento em gesso' },
+    { code: '4330-4/04', description: 'Serviços de pintura de edifícios' },
+    { code: '4330-4/99', description: 'Outras obras de acabamento da construção' },
+  ],
+};
+
 export function SearchCompaniesDialog({ open, onOpenChange, onCompaniesImported }: SearchCompaniesDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [searchParams, setSearchParams] = useState({
@@ -42,8 +102,27 @@ export function SearchCompaniesDialog({ open, onOpenChange, onCompaniesImported 
   const [importing, setImporting] = useState<Record<string, boolean>>({});
   const [imported, setImported] = useState<Record<string, boolean>>({});
   const [hasSearched, setHasSearched] = useState(false);
+  const [showCnaeHelper, setShowCnaeHelper] = useState(false);
+  const [cnaeSearch, setCnaeSearch] = useState('');
   
   const { toast } = useToast();
+
+  const selectCnae = (code: string) => {
+    setSearchParams({ ...searchParams, cnae: code });
+    setShowCnaeHelper(false);
+  };
+
+  // Filter CNAEs based on search
+  const filteredCnaes = cnaeSearch
+    ? Object.entries(popularCnaes).reduce((acc, [segment, cnaes]) => {
+        const filtered = cnaes.filter(
+          c => c.code.includes(cnaeSearch) || 
+               c.description.toLowerCase().includes(cnaeSearch.toLowerCase())
+        );
+        if (filtered.length > 0) acc[segment] = filtered;
+        return acc;
+      }, {} as Record<string, typeof popularCnaes['Comércio']>)
+    : popularCnaes;
 
   const handleSearch = async () => {
     if (!searchParams.cnae && !searchParams.cidade && !searchParams.uf) {
@@ -128,9 +207,21 @@ export function SearchCompaniesDialog({ open, onOpenChange, onCompaniesImported 
         {/* Search Form */}
         <div className="grid grid-cols-3 gap-4 py-4">
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              CNAE
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                CNAE
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCnaeHelper(!showCnaeHelper)}
+                className="h-6 px-2 text-xs text-primary hover:text-primary gap-1"
+              >
+                <HelpCircle className="h-3 w-3" />
+                {showCnaeHelper ? 'Ocultar' : 'Não sei o CNAE'}
+              </Button>
+            </div>
             <Input
               placeholder="Ex: 6201-5/01"
               value={searchParams.cnae}
@@ -170,6 +261,59 @@ export function SearchCompaniesDialog({ open, onOpenChange, onCompaniesImported 
             </Select>
           </div>
         </div>
+
+        {/* CNAE Helper */}
+        <Collapsible open={showCnaeHelper} onOpenChange={setShowCnaeHelper}>
+          <CollapsibleContent className="space-y-3 pb-4">
+            <div className="p-4 rounded-xl bg-secondary/30 border border-border/30">
+              <div className="flex items-center gap-2 mb-3">
+                <HelpCircle className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-sm">Encontre o CNAE da atividade</span>
+              </div>
+              
+              <Input
+                placeholder="Buscar por código ou descrição..."
+                value={cnaeSearch}
+                onChange={(e) => setCnaeSearch(e.target.value)}
+                className="bg-background/50 border-border/50 mb-3"
+              />
+
+              <div className="max-h-[250px] overflow-y-auto space-y-3">
+                {Object.entries(filteredCnaes).map(([segment, cnaes]) => (
+                  <div key={segment}>
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      {segment}
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {cnaes.map((cnae) => (
+                        <Badge
+                          key={cnae.code}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-primary/10 hover:border-primary/50 transition-colors text-xs py-1"
+                          onClick={() => selectCnae(cnae.code)}
+                        >
+                          <span className="font-mono mr-1">{cnae.code}</span>
+                          <span className="text-muted-foreground hidden sm:inline">
+                            - {cnae.description.length > 30 ? cnae.description.slice(0, 30) + '...' : cnae.description}
+                          </span>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {Object.keys(filteredCnaes).length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhum CNAE encontrado para "{cnaeSearch}"
+                  </p>
+                )}
+              </div>
+              
+              <p className="text-xs text-muted-foreground mt-3">
+                Clique em um CNAE para selecioná-lo. Esta é uma lista dos mais comuns.
+              </p>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <Button 
           onClick={handleSearch} 
