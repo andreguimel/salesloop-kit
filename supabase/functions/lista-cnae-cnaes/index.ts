@@ -5,7 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const BASE_URL = 'https://listacnae.com.br/api';
+// Try multiple base URLs with the endpoint
+const API_URLS = [
+  'https://listacnae.com.br/todosCnaes',
+  'https://api.listacnae.com.br/todosCnaes',
+  'https://listacnae.com.br/api/todosCnaes',
+];
 
 // Cache for CNAEs
 let cachedCnaes: { id: string; descricao: string }[] | null = null;
@@ -36,36 +41,63 @@ serve(async (req) => {
       );
     }
 
-    console.log('Fetching CNAEs from Lista CNAE API');
+    let lastError = '';
+    let successData = null;
 
-    const apiUrl = `${BASE_URL}/todosCnaes`;
-    
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-      },
-    });
-
-    console.log('Response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lista CNAE API error:', response.status, errorText);
+    // Try each URL with Bearer auth
+    for (const apiUrl of API_URLS) {
+      console.log('Trying URL:', apiUrl);
+      console.log('Using token (first 10 chars):', token.substring(0, 10) + '...');
       
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        });
+
+        console.log('Response status:', response.status);
+
+        const responseText = await response.text();
+        console.log('Response body (first 300 chars):', responseText.substring(0, 300));
+
+        // Skip if HTML response
+        if (responseText.trim().startsWith('<') || responseText.trim().startsWith('<!')) {
+          console.log('Got HTML response, trying next URL...');
+          lastError = 'API retornou HTML para ' + apiUrl;
+          continue;
+        }
+
+        if (!response.ok) {
+          console.log('Non-OK response:', response.status);
+          lastError = `${apiUrl}: ${response.status} - ${responseText.substring(0, 100)}`;
+          continue;
+        }
+
+        const data = JSON.parse(responseText);
+        console.log('Success! Received', Array.isArray(data) ? data.length : 'object', 'from', apiUrl);
+        successData = data;
+        break;
+
+      } catch (urlError) {
+        console.error('Error with URL', apiUrl, ':', urlError);
+        lastError = `${apiUrl}: ${urlError instanceof Error ? urlError.message : 'Unknown error'}`;
+      }
+    }
+
+    if (!successData) {
+      console.error('All URLs failed. Last error:', lastError);
       return new Response(
-        JSON.stringify({ error: 'Erro ao buscar CNAEs: ' + errorText.substring(0, 100) }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Erro ao buscar CNAEs. Verifique se o token está correto.', details: lastError }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const data = await response.json();
-    
-    console.log('Received', Array.isArray(data) ? data.length : 'unknown', 'CNAEs');
-
     // Transform and cache the data
-    const cnaes = (Array.isArray(data) ? data : data.cnaes || []).map((item: any) => ({
+    const cnaes = (Array.isArray(successData) ? successData : successData.cnaes || []).map((item: any) => ({
       id: String(item.id || item.codigo),
       descricao: item.descricao || item.nome,
     }));
