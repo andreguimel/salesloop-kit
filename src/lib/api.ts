@@ -47,13 +47,14 @@ export async function searchCompanyByCnpj(cnpj: string): Promise<SearchCompanyBy
   return data;
 }
 
-// Search Companies by CNAE via Nuvem Fiscal API
+// Search Companies by CNAE via Lista CNAE API
 export interface SearchByCnaeParams {
   cnae: string;
-  municipio: string;
-  naturezaJuridica?: string;
-  top?: number;
-  skip?: number;
+  municipio: number; // ID do município na Lista CNAE
+  quantidade?: number;
+  inicio?: number;
+  telefoneObrigatorio?: boolean;
+  emailObrigatorio?: boolean;
 }
 
 export interface SearchByCnaeResponse {
@@ -77,6 +78,22 @@ export async function searchCompaniesByCnae(params: SearchByCnaeParams): Promise
   }
 
   return data;
+}
+
+// Get all municipalities from Lista CNAE API
+export async function fetchMunicipios(): Promise<{ id: number; nome: string; uf: string }[]> {
+  const { data, error } = await supabase.functions.invoke('lista-cnae-municipios');
+
+  if (error) {
+    console.error('Error fetching municipalities:', error);
+    throw new Error(error.message || 'Erro ao buscar municípios');
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data.municipios || [];
 }
 
 // Companies
