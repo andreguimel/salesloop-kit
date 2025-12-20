@@ -97,17 +97,22 @@ serve(async (req) => {
     const accessToken = await getAccessToken();
 
     // Build query parameters
+    // natureza_juridica is required by Nuvem Fiscal API
+    // Default to common types if not specified:
+    // 2062 - Sociedade Empresária Limitada
+    // 2135 - Empresário Individual (MEI)
+    // 2305 - EIRELI Empresária
+    const cleanNatureza = naturezaJuridica 
+      ? naturezaJuridica.replace(/[^\d]/g, '') 
+      : '2062'; // Default to Sociedade Limitada
+
     const params = new URLSearchParams({
       '$top': top.toString(),
       '$skip': skip.toString(),
       'cnae_principal': cleanCnae,
       'municipio': cleanMunicipio,
+      'natureza_juridica': cleanNatureza,
     });
-
-    // Add natureza jurídica if provided
-    if (naturezaJuridica) {
-      params.append('natureza_juridica', naturezaJuridica.replace(/[^\d]/g, ''));
-    }
 
     const apiUrl = `https://api.nuvemfiscal.com.br/cnpj?${params.toString()}`;
     
