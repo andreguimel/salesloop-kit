@@ -33,29 +33,40 @@ serve(async (req) => {
 
     console.log('Search params:', { cnae, cidade, uf, page });
 
-    // Build query parameters for CNPJ.ws API
+    // Build query parameters for CNPJ.ws API - using /pesquisa endpoint
     const params = new URLSearchParams();
     
     if (cnae) {
       // Remove formatting from CNAE (e.g., "6201-5/01" -> "6201501")
       const cleanCnae = cnae.replace(/[-\/]/g, '');
-      params.append('cnae', cleanCnae);
+      params.append('atividade_principal_id', cleanCnae);
     }
     
     if (cidade) {
-      params.append('municipio', cidade);
+      // Note: cidade_id expects IBGE code, but we'll try with the name for now
+      params.append('razao_social', cidade); // Workaround - search by name containing city
     }
     
     if (uf) {
-      params.append('uf', uf);
+      // Map UF to IBGE state codes
+      const ufToIbge: Record<string, string> = {
+        'AC': '12', 'AL': '27', 'AP': '16', 'AM': '13', 'BA': '29',
+        'CE': '23', 'DF': '53', 'ES': '32', 'GO': '52', 'MA': '21',
+        'MT': '51', 'MS': '50', 'MG': '31', 'PA': '15', 'PB': '25',
+        'PR': '41', 'PE': '26', 'PI': '22', 'RJ': '33', 'RN': '24',
+        'RS': '43', 'RO': '11', 'RR': '14', 'SC': '42', 'SP': '35',
+        'SE': '28', 'TO': '17'
+      };
+      const estadoId = ufToIbge[uf.toUpperCase()];
+      if (estadoId) {
+        params.append('estado_id', estadoId);
+      }
     }
     
-    params.append('page', page.toString());
-    params.append('limit', '50');
     // Only active companies
-    params.append('situacao', 'ATIVA');
+    params.append('situacao_cadastral', 'Ativa');
 
-    const apiUrl = `https://comercial.cnpj.ws/cnpj?${params.toString()}`;
+    const apiUrl = `https://comercial.cnpj.ws/pesquisa?${params.toString()}`;
     
     console.log('Calling CNPJ.ws API:', apiUrl);
 
@@ -96,22 +107,30 @@ serve(async (req) => {
     console.log('CNPJ.ws response:', JSON.stringify(data).slice(0, 500));
 
     // Transform the response to our format
-    const companies = (data.records || data.data || []).map((company: any) => ({
-      cnpj: company.cnpj,
-      name: company.razao_social || company.nome_fantasia || 'Empresa sem nome',
-      fantasyName: company.nome_fantasia || '',
-      cnae: company.cnae_fiscal || '',
-      cnaeDescription: company.cnae_fiscal_descricao || '',
-      city: company.municipio || '',
-      state: company.uf || '',
-      phone1: company.ddd_telefone_1 || '',
-      phone2: company.ddd_telefone_2 || '',
-      email: company.email || '',
-      address: company.logradouro || '',
-      number: company.numero || '',
-      neighborhood: company.bairro || '',
-      cep: company.cep || '',
-    }));
+    // The /pesquisa endpoint returns a different structure
+    const records = data.records || data.empresas || data.data || [];
+    const companies = records.map((company: any) => {
+      // Handle nested structure from /pesquisa endpoint
+      const estabelecimento = company.estabelecimento || company;
+      const atividadePrincipal = estabelecimento.atividade_principal || company.atividade_principal || {};
+      
+      return {
+        cnpj: estabelecimento.cnpj || company.cnpj || '',
+        name: company.razao_social || estabelecimento.razao_social || 'Empresa sem nome',
+        fantasyName: estabelecimento.nome_fantasia || company.nome_fantasia || '',
+        cnae: atividadePrincipal.id || atividadePrincipal.codigo || estabelecimento.cnae_fiscal || '',
+        cnaeDescription: atividadePrincipal.descricao || estabelecimento.cnae_fiscal_descricao || '',
+        city: estabelecimento.cidade?.nome || estabelecimento.municipio || company.municipio || '',
+        state: estabelecimento.estado?.sigla || estabelecimento.uf || company.uf || '',
+        phone1: estabelecimento.telefone1 || estabelecimento.ddd_telefone_1 || company.ddd_telefone_1 || '',
+        phone2: estabelecimento.telefone2 || estabelecimento.ddd_telefone_2 || company.ddd_telefone_2 || '',
+        email: estabelecimento.email || company.email || '',
+        address: estabelecimento.logradouro || company.logradouro || '',
+        number: estabelecimento.numero || company.numero || '',
+        neighborhood: estabelecimento.bairro || company.bairro || '',
+        cep: estabelecimento.cep || company.cep || '',
+      };
+    });
 
     return new Response(
       JSON.stringify({
