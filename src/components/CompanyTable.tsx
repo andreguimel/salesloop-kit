@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MapPin, Building2, Smartphone, RefreshCw, CheckCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,14 @@ interface CompanyTableProps {
 
 export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhonesValidated }: CompanyTableProps) {
   const [validatingCompanyId, setValidatingCompanyId] = useState<string | null>(null);
+  const [isValidatingAll, setIsValidatingAll] = useState(false);
+
+  // Get all pending phone IDs across all companies
+  const allPendingPhoneIds = useMemo(() => {
+    return companies.flatMap(c => 
+      c.phones.filter(p => p.status === 'pending' && p.id).map(p => p.id!)
+    );
+  }, [companies]);
 
   const handlePhoneToggle = (companyId: string, phoneNumber: string, isValid: boolean) => {
     if (!isValid) return;
@@ -67,6 +75,35 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhon
     }
   };
 
+  const handleValidateAllPhones = async () => {
+    if (allPendingPhoneIds.length === 0) {
+      toast.info('Não há telefones pendentes para validar');
+      return;
+    }
+
+    setIsValidatingAll(true);
+    
+    try {
+      const result = await validatePhones(allPendingPhoneIds);
+      
+      toast.success(
+        `Validação em lote concluída!`,
+        { 
+          description: `${result.summary.valid} válidos, ${result.summary.invalid} inválidos, ${result.summary.uncertain} incertos` 
+        }
+      );
+      
+      onPhonesValidated?.();
+    } catch (error) {
+      console.error('Error validating all phones:', error);
+      toast.error('Erro ao validar telefones', {
+        description: error instanceof Error ? error.message : 'Tente novamente'
+      });
+    } finally {
+      setIsValidatingAll(false);
+    }
+  };
+
   if (companies.length === 0) {
     return (
       <div className="p-16 rounded-2xl glass text-center animate-fade-up" style={{ animationDelay: '300ms' }}>
@@ -88,9 +125,32 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhon
           </div>
           <h3 className="text-lg font-semibold">Empresas</h3>
         </div>
-        <span className="text-sm text-muted-foreground px-3 py-1 rounded-full bg-secondary">
-          {companies.length} resultado{companies.length !== 1 ? 's' : ''}
-        </span>
+        <div className="flex items-center gap-3">
+          {allPendingPhoneIds.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleValidateAllPhones}
+              disabled={isValidatingAll}
+              className="gap-2 text-xs font-medium border-primary/30 hover:bg-primary/10"
+            >
+              {isValidatingAll ? (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  Validando {allPendingPhoneIds.length}...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Validar todos ({allPendingPhoneIds.length})
+                </>
+              )}
+            </Button>
+          )}
+          <span className="text-sm text-muted-foreground px-3 py-1 rounded-full bg-secondary">
+            {companies.length} resultado{companies.length !== 1 ? 's' : ''}
+          </span>
+        </div>
       </div>
       
       <div className="overflow-x-auto">
