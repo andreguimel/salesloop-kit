@@ -5,9 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const BASE_URL = 'https://listacnae.com.br';
+
 interface SearchParams {
   cnae: string;
-  municipio: string;
+  municipio: number; // ID do município na Lista CNAE (não IBGE)
   quantidade?: number;
   inicio?: number;
   telefoneObrigatorio?: boolean;
@@ -50,17 +52,14 @@ serve(async (req) => {
       );
     }
 
-    // Clean municipio - remove formatting (keep only digits)
-    const cleanMunicipio = municipio.replace(/[^\d]/g, '');
-
-    console.log('Searching Lista CNAE for CNAE:', cleanCnae, 'Municipality IBGE Code:', cleanMunicipio);
+    console.log('Searching Lista CNAE for CNAE:', cleanCnae, 'Municipality ID:', municipio);
 
     // Build request body for Lista CNAE API
     const requestBody: Record<string, any> = {
       inicio: inicio,
       quantidade: quantidade,
       cnaes: [parseInt(cleanCnae)],
-      municipios: [parseInt(cleanMunicipio)],
+      municipios: [municipio], // Using Lista CNAE municipality ID directly
     };
 
     if (telefoneObrigatorio) {
@@ -73,13 +72,11 @@ serve(async (req) => {
 
     console.log('Request body:', JSON.stringify(requestBody));
 
-    // Lista CNAE API uses GET method with JSON body (as per documentation)
-    // The /api/v1/buscar endpoint returned 405 for POST, so it expects GET
-    const apiUrl = 'https://listacnae.com.br/api/v1/buscar';
+    // Lista CNAE API - GET /buscar with JSON body
+    const apiUrl = `${BASE_URL}/buscar`;
     
-    console.log('Calling API:', apiUrl, 'with GET method and JSON body');
+    console.log('Calling API:', apiUrl);
 
-    // Some APIs accept body with GET - this is non-standard but some services use it
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -107,6 +104,13 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ error: 'Limite de requisições excedido. Aguarde um momento.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'Créditos insuficientes na Lista CNAE.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
