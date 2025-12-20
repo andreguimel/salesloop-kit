@@ -32,9 +32,9 @@ export function PhoneStatusBadge({ phone, showNumber = true }: PhoneStatusBadgeP
   return (
     <div className="flex items-center gap-2">
       {showNumber && (
-        <span className="text-sm font-medium">{phone.number}</span>
+        <span className="text-sm font-medium text-foreground">{phone.number}</span>
       )}
-      <Badge variant={config.variant} className="gap-1">
+      <Badge variant={config.variant} className="gap-1 font-medium">
         <Icon className="h-3 w-3" />
         {config.label}
       </Badge>

@@ -1,19 +1,9 @@
-import { useState } from 'react';
-import { MapPin, Building2, Phone as PhoneIcon } from 'lucide-react';
+import { MapPin, Building2, Smartphone } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PhoneStatusBadge } from './PhoneStatusBadge';
 import { MessageStatusBadge } from './MessageStatusBadge';
-import { Company, Phone } from '@/types';
+import { Company } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface CompanyTableProps {
@@ -43,101 +33,115 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones }: Comp
 
   if (companies.length === 0) {
     return (
-      <Card className="border-border/50">
-        <CardContent className="py-16">
-          <div className="text-center text-muted-foreground">
-            <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">Nenhuma empresa encontrada</p>
-            <p className="text-sm">Use os filtros acima para buscar empresas</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="p-16 rounded-2xl glass text-center animate-fade-up" style={{ animationDelay: '300ms' }}>
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-secondary mb-4">
+          <Building2 className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <p className="text-lg font-semibold mb-1">Nenhuma empresa encontrada</p>
+        <p className="text-sm text-muted-foreground">Use os filtros acima para buscar empresas</p>
+      </div>
     );
   }
 
   return (
-    <Card className="border-border/50 shadow-sm animate-fade-in overflow-hidden">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Building2 className="h-5 w-5 text-primary" />
-          Empresas Encontradas
-          <span className="ml-auto text-sm font-normal text-muted-foreground">
-            {companies.length} resultado{companies.length !== 1 ? 's' : ''}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[250px]">Empresa</TableHead>
-                <TableHead>CNAE</TableHead>
-                <TableHead>Localização</TableHead>
-                <TableHead>Telefones</TableHead>
-                <TableHead>Status Envio</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {companies.map((company, index) => (
-                <TableRow 
-                  key={company.id}
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <TableCell>
-                    <div className="font-medium">{company.name}</div>
-                    <div className="text-sm text-muted-foreground">{company.segment}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm font-mono">{company.cnae}</div>
-                    <div className="text-xs text-muted-foreground max-w-[200px] truncate">
-                      {company.cnaeDescription}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5 text-sm">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                      {company.city}, {company.state}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-2">
-                      {company.phones.map((phone) => (
-                        <div key={phone.number} className="flex items-center gap-2">
-                          <Checkbox
-                            checked={selectedPhones[company.id]?.includes(phone.number) || false}
-                            onCheckedChange={() => handlePhoneToggle(company.id, phone.number, phone.status === 'valid')}
-                            disabled={phone.status !== 'valid'}
-                            className={cn(
-                              phone.status !== 'valid' && 'opacity-50 cursor-not-allowed'
-                            )}
-                          />
+    <div className="rounded-2xl glass overflow-hidden animate-fade-up" style={{ animationDelay: '300ms' }}>
+      <div className="p-5 border-b border-border/50 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg gradient-accent">
+            <Building2 className="h-4 w-4 text-accent-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold">Empresas</h3>
+        </div>
+        <span className="text-sm text-muted-foreground px-3 py-1 rounded-full bg-secondary">
+          {companies.length} resultado{companies.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border/50 bg-secondary/30">
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
+                Empresa
+              </th>
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
+                CNAE
+              </th>
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
+                Local
+              </th>
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
+                Telefones
+              </th>
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
+                Status
+              </th>
+              <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/30">
+            {companies.map((company, index) => (
+              <tr 
+                key={company.id}
+                className="hover:bg-secondary/20 transition-colors animate-fade-up"
+                style={{ animationDelay: `${400 + index * 50}ms` }}
+              >
+                <td className="px-5 py-4">
+                  <div className="font-semibold text-foreground">{company.name}</div>
+                  <div className="text-sm text-muted-foreground mt-0.5">{company.segment}</div>
+                </td>
+                <td className="px-5 py-4">
+                  <code className="text-xs font-mono px-2 py-1 rounded bg-secondary text-muted-foreground">
+                    {company.cnae}
+                  </code>
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {company.city}, {company.state}
+                  </div>
+                </td>
+                <td className="px-5 py-4">
+                  <div className="space-y-2">
+                    {company.phones.map((phone) => (
+                      <div key={phone.number} className="flex items-center gap-3">
+                        <Checkbox
+                          checked={selectedPhones[company.id]?.includes(phone.number) || false}
+                          onCheckedChange={() => handlePhoneToggle(company.id, phone.number, phone.status === 'valid')}
+                          disabled={phone.status !== 'valid'}
+                          className={cn(
+                            'border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary',
+                            phone.status !== 'valid' && 'opacity-40 cursor-not-allowed'
+                          )}
+                        />
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
                           <PhoneStatusBadge phone={phone} />
                         </div>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <MessageStatusBadge status={company.messageStatus} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSelectAllValid(company)}
-                      className="text-xs"
-                    >
-                      Selecionar válidos
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                      </div>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-5 py-4">
+                  <MessageStatusBadge status={company.messageStatus} />
+                </td>
+                <td className="px-5 py-4 text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSelectAllValid(company)}
+                    className="text-xs font-medium text-primary hover:text-primary hover:bg-primary/10"
+                  >
+                    Selecionar válidos
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

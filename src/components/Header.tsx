@@ -1,36 +1,40 @@
-import { Zap, Menu } from 'lucide-react';
+import { Sparkles, Menu, Bell, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4 md:px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-glow">
-            <Zap className="h-5 w-5 text-primary-foreground" />
+    <header className="sticky top-0 z-50 w-full border-b border-border/30 glass">
+      <div className="container flex h-16 items-center justify-between px-4 md:px-8">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl gradient-primary glow-primary">
+              <Sparkles className="h-5 w-5 text-primary-foreground" />
+            </div>
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">ProspectPro</h1>
-            <p className="text-xs text-muted-foreground hidden sm:block">Prospecção Inteligente</p>
+            <h1 className="text-lg font-bold tracking-tight text-gradient">ProspectPro</h1>
           </div>
         </div>
 
-        <nav className="hidden md:flex items-center gap-6">
-          <a href="#" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+        <nav className="hidden md:flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="text-foreground font-medium">
             Dashboard
-          </a>
-          <a href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+          </Button>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground font-medium">
             Campanhas
-          </a>
-          <a href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+          </Button>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground font-medium">
             Relatórios
-          </a>
+          </Button>
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="hidden md:flex">
-            Configurações
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="hidden md:flex text-muted-foreground hover:text-foreground">
+            <Bell className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="hidden md:flex text-muted-foreground hover:text-foreground">
+            <User className="h-5 w-5" />
           </Button>
           <Sheet>
             <SheetTrigger asChild>
@@ -38,7 +42,7 @@ export function Header() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px]">
+            <SheetContent side="right" className="w-[280px] glass-strong">
               <nav className="flex flex-col gap-4 mt-8">
                 <a href="#" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
                   Dashboard

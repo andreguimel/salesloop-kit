@@ -1,5 +1,4 @@
 import { LucideIcon } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface MetricCardProps {
@@ -10,23 +9,9 @@ interface MetricCardProps {
     value: number;
     isPositive: boolean;
   };
-  variant?: 'default' | 'primary' | 'success' | 'warning';
+  variant?: 'default' | 'primary' | 'accent' | 'success';
   delay?: number;
 }
-
-const variantStyles = {
-  default: 'bg-card border-border',
-  primary: 'bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20',
-  success: 'bg-gradient-to-br from-success/10 to-success/5 border-success/20',
-  warning: 'bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20',
-};
-
-const iconStyles = {
-  default: 'bg-secondary text-secondary-foreground',
-  primary: 'bg-primary/20 text-primary',
-  success: 'bg-success/20 text-success',
-  warning: 'bg-warning/20 text-warning',
-};
 
 export function MetricCard({ 
   title, 
@@ -37,35 +22,56 @@ export function MetricCard({
   delay = 0 
 }: MetricCardProps) {
   return (
-    <Card 
+    <div 
       className={cn(
-        'hover-lift border overflow-hidden animate-slide-up',
-        variantStyles[variant]
+        'relative group p-6 rounded-2xl glass hover-glow animate-fade-up overflow-hidden',
+        variant === 'primary' && 'gradient-border',
+        variant === 'accent' && 'gradient-border'
       )}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold tracking-tight">{value.toLocaleString('pt-BR')}</p>
-            {trend && (
-              <p className={cn(
-                'text-xs font-medium',
-                trend.isPositive ? 'text-success' : 'text-destructive'
-              )}>
-                {trend.isPositive ? '+' : ''}{trend.value}% vs último mês
-              </p>
-            )}
-          </div>
-          <div className={cn(
-            'p-3 rounded-xl',
-            iconStyles[variant]
-          )}>
-            <Icon className="h-6 w-6" />
-          </div>
+      {/* Background glow effect */}
+      {variant === 'primary' && (
+        <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-primary/20 blur-3xl group-hover:bg-primary/30 transition-colors duration-500" />
+      )}
+      {variant === 'accent' && (
+        <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-accent/20 blur-3xl group-hover:bg-accent/30 transition-colors duration-500" />
+      )}
+      {variant === 'success' && (
+        <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-success/20 blur-3xl group-hover:bg-success/30 transition-colors duration-500" />
+      )}
+      
+      <div className="relative flex items-start justify-between">
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-4xl font-bold tracking-tight">
+            {typeof value === 'number' ? value.toLocaleString('pt-BR') : value}
+          </p>
+          {trend && (
+            <div className={cn(
+              'inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full',
+              trend.isPositive 
+                ? 'bg-success/20 text-success' 
+                : 'bg-destructive/20 text-destructive'
+            )}>
+              <span>{trend.isPositive ? '↑' : '↓'}</span>
+              <span>{Math.abs(trend.value)}%</span>
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+        <div className={cn(
+          'p-3 rounded-xl transition-transform duration-300 group-hover:scale-110',
+          variant === 'primary' && 'gradient-primary',
+          variant === 'accent' && 'gradient-accent',
+          variant === 'success' && 'bg-success',
+          variant === 'default' && 'bg-secondary'
+        )}>
+          <Icon className={cn(
+            'h-5 w-5',
+            variant !== 'default' ? 'text-primary-foreground' : 'text-muted-foreground'
+          )} />
+        </div>
+      </div>
+    </div>
   );
 }
