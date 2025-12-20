@@ -51,7 +51,7 @@ serve(async (req) => {
     }
     
     params.append('page', page.toString());
-    params.append('limit', '20');
+    params.append('limit', '50');
     // Only active companies
     params.append('situacao', 'ATIVA');
 
@@ -118,7 +118,7 @@ serve(async (req) => {
         companies,
         total: data.total || data.count || companies.length,
         page: page,
-        hasMore: companies.length === 20,
+        hasMore: companies.length === 50,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
