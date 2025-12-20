@@ -5,11 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Try multiple base URLs with the endpoint
+// Try multiple base URLs based on dashboard URL pattern
 const API_URLS = [
+  'https://listacnae.com.br/app/api/todosCnaes',
+  'https://listacnae.com.br/app/todosCnaes',
   'https://listacnae.com.br/todosCnaes',
-  'https://api.listacnae.com.br/todosCnaes',
-  'https://listacnae.com.br/api/todosCnaes',
 ];
 
 // Cache for CNAEs
