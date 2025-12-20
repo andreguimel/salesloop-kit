@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 interface SearchParams {
-  query: string; // Ex: "agências de publicidade em Recife PE"
+  query: string;
   limit?: number;
 }
 
@@ -35,98 +35,67 @@ serve(async (req) => {
       );
     }
 
-    console.log('Searching Google Maps for:', query);
+    console.log('Searching businesses for:', query);
 
-    // Use Firecrawl search to find businesses
-    const searchQuery = `${query} site:google.com/maps`;
-    
-    const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: searchQuery,
-        limit: Math.min(limit, 10),
-        lang: 'pt',
-        country: 'BR',
-        scrapeOptions: {
-          formats: ['markdown'],
+    // Use Firecrawl search to find businesses directly
+    // Search for business listings, not Google Maps pages
+    const searchQueries = [
+      `${query} telefone contato endereço`,
+      `${query} site oficial`,
+    ];
+
+    const allCompanies: any[] = [];
+
+    for (const searchQuery of searchQueries) {
+      console.log('Searching:', searchQuery);
+      
+      const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          query: searchQuery,
+          limit: Math.ceil(limit / 2),
+          lang: 'pt',
+          country: 'BR',
+          scrapeOptions: {
+            formats: ['markdown'],
+          },
+        }),
+      });
 
-    if (!searchResponse.ok) {
-      const errorText = await searchResponse.text();
-      console.error('Firecrawl search error:', errorText);
-      return new Response(
-        JSON.stringify({ error: 'Erro na busca', details: errorText }),
-        { status: searchResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+      if (!searchResponse.ok) {
+        const errorText = await searchResponse.text();
+        console.error('Firecrawl search error:', errorText);
+        continue;
+      }
 
-    const searchData = await searchResponse.json();
-    console.log('Search results:', JSON.stringify(searchData).slice(0, 1000));
+      const searchData = await searchResponse.json();
+      console.log(`Found ${searchData.data?.length || 0} results for: ${searchQuery}`);
 
-    // Now scrape the Google Maps search page directly
-    const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}`;
-    console.log('Scraping Google Maps URL:', mapsUrl);
-
-    const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: mapsUrl,
-        formats: ['markdown', 'links'],
-        waitFor: 3000, // Wait for dynamic content
-      }),
-    });
-
-    if (!scrapeResponse.ok) {
-      const errorText = await scrapeResponse.text();
-      console.error('Firecrawl scrape error:', errorText);
-      // Continue with search results if scrape fails
-    }
-
-    let scrapeData = null;
-    if (scrapeResponse.ok) {
-      scrapeData = await scrapeResponse.json();
-      console.log('Scrape results:', JSON.stringify(scrapeData).slice(0, 1000));
-    }
-
-    // Parse the results to extract company information
-    const companies: any[] = [];
-    
-    // Parse search results
-    if (searchData.data && Array.isArray(searchData.data)) {
-      for (const result of searchData.data) {
-        const company = parseGoogleMapsResult(result);
-        if (company && company.name) {
-          companies.push(company);
+      // Parse search results
+      if (searchData.data && Array.isArray(searchData.data)) {
+        for (const result of searchData.data) {
+          const company = parseSearchResult(result);
+          if (company && company.name && !isGenericResult(company.name)) {
+            // Avoid duplicates
+            if (!allCompanies.find(c => c.name.toLowerCase() === company.name.toLowerCase())) {
+              allCompanies.push(company);
+            }
+          }
         }
       }
     }
 
-    // Parse markdown content from scrape
-    if (scrapeData?.data?.markdown) {
-      const parsedFromMarkdown = parseMarkdownForBusinesses(scrapeData.data.markdown);
-      for (const company of parsedFromMarkdown) {
-        // Avoid duplicates
-        if (!companies.find(c => c.name === company.name)) {
-          companies.push(company);
-        }
-      }
-    }
+    console.log(`Total unique companies found: ${allCompanies.length}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        companies: companies.slice(0, limit),
-        total: companies.length,
+        companies: allCompanies.slice(0, limit),
+        total: allCompanies.length,
         query,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -141,7 +110,17 @@ serve(async (req) => {
   }
 });
 
-function parseGoogleMapsResult(result: any): any {
+function isGenericResult(name: string): boolean {
+  const genericTerms = [
+    'results', 'map tools', 'map type', 'google maps', 'sign in',
+    'get the most out', 'pesquisa', 'busca', 'home', 'menu',
+    'collapse', 'expand', 'rating', 'hours', 'filters'
+  ];
+  const lowerName = name.toLowerCase();
+  return genericTerms.some(term => lowerName.includes(term));
+}
+
+function parseSearchResult(result: any): any {
   if (!result) return null;
 
   const company: any = {
@@ -154,96 +133,79 @@ function parseGoogleMapsResult(result: any): any {
     source: result.url || '',
   };
 
-  // Extract from title
+  // Extract name from title - clean up common suffixes
   if (result.title) {
-    company.name = result.title.replace(/ - Google Maps$/, '').replace(/ · .*$/, '').trim();
+    let name = result.title
+      .replace(/ - Google Maps$/, '')
+      .replace(/ \| .*$/, '')
+      .replace(/ - .*$/, '')
+      .replace(/ · .*$/, '')
+      .trim();
+    
+    // If name is too long, take first part
+    if (name.length > 80) {
+      name = name.split(/[,\-|]/)[0].trim();
+    }
+    
+    company.name = name;
   }
 
   // Extract from description/markdown
   const content = result.markdown || result.description || '';
   
-  // Phone regex for Brazilian phones
-  const phoneMatch = content.match(/\(?\d{2}\)?\s*\d{4,5}[-\s]?\d{4}/);
-  if (phoneMatch) {
-    company.phone1 = phoneMatch[0].replace(/\D/g, '');
-  }
-
-  // Try to extract address
-  const addressPatterns = [
-    /(?:R\.|Rua|Av\.|Avenida|Al\.|Alameda|Pça\.|Praça)[^,\n]+(?:,\s*\d+)?(?:\s*-\s*[^,\n]+)?/i,
+  // Phone regex for Brazilian phones (with various formats)
+  const phonePatterns = [
+    /\(?\d{2}\)?\s*\d{4,5}[-.\s]?\d{4}/g,
+    /\+55\s*\d{2}\s*\d{4,5}[-.\s]?\d{4}/g,
   ];
-  for (const pattern of addressPatterns) {
-    const match = content.match(pattern);
-    if (match) {
-      company.address = match[0].trim();
+  
+  for (const pattern of phonePatterns) {
+    const matches = content.match(pattern);
+    if (matches && matches.length > 0) {
+      // Get the first valid phone
+      company.phone1 = matches[0].replace(/\D/g, '');
+      if (company.phone1.startsWith('55') && company.phone1.length > 11) {
+        company.phone1 = company.phone1.substring(2);
+      }
       break;
     }
   }
 
+  // Try to extract address
+  const addressPatterns = [
+    /(?:Endereço|Localização|End\.?):\s*([^\n]+)/i,
+    /(?:R\.|Rua|Av\.|Avenida|Al\.|Alameda|Pça\.|Praça|Travessa|Tv\.)[^,\n]+(?:,\s*\d+)?(?:\s*-\s*[^,\n]+)?(?:,\s*[^,\n]+)?/i,
+  ];
+  
+  for (const pattern of addressPatterns) {
+    const match = content.match(pattern);
+    if (match) {
+      company.address = (match[1] || match[0]).trim().substring(0, 200);
+      break;
+    }
+  }
+
+  // Extract website from URL if it's a business website
+  if (result.url && !result.url.includes('google.com') && !result.url.includes('facebook.com')) {
+    try {
+      const url = new URL(result.url);
+      company.website = url.origin;
+    } catch {
+      // Ignore invalid URLs
+    }
+  }
+
   // Extract rating
-  const ratingMatch = content.match(/(\d[,\.]\d)\s*(?:estrelas?|⭐)/i);
+  const ratingMatch = content.match(/(\d[,\.]\d)\s*(?:estrelas?|⭐|\/\s*5)/i);
   if (ratingMatch) {
     company.rating = ratingMatch[1];
   }
 
   // Extract review count
-  const reviewMatch = content.match(/\((\d+(?:\.\d+)?)\s*(?:avaliações?|reviews?)\)/i);
+  const reviewMatch = content.match(/\((\d+(?:\.\d+)?(?:k|K)?)\s*(?:avaliações?|reviews?|opiniões?)\)/i);
   if (reviewMatch) {
     company.reviews = reviewMatch[1];
   }
 
   return company;
-}
-
-function parseMarkdownForBusinesses(markdown: string): any[] {
-  const companies: any[] = [];
-  
-  // Split by potential business entries (looking for patterns)
-  const lines = markdown.split('\n');
-  let currentCompany: any = null;
-
-  for (const line of lines) {
-    // Look for business names (usually in headers or bold)
-    const headerMatch = line.match(/^#+\s*(.+)$/) || line.match(/^\*\*(.+)\*\*$/);
-    if (headerMatch) {
-      if (currentCompany && currentCompany.name) {
-        companies.push(currentCompany);
-      }
-      currentCompany = {
-        name: headerMatch[1].trim(),
-        phone1: '',
-        address: '',
-        website: '',
-        rating: '',
-        reviews: '',
-      };
-      continue;
-    }
-
-    if (currentCompany) {
-      // Extract phone
-      const phoneMatch = line.match(/\(?\d{2}\)?\s*\d{4,5}[-\s]?\d{4}/);
-      if (phoneMatch && !currentCompany.phone1) {
-        currentCompany.phone1 = phoneMatch[0].replace(/\D/g, '');
-      }
-
-      // Extract address
-      if (line.match(/(?:R\.|Rua|Av\.|Avenida)/i) && !currentCompany.address) {
-        currentCompany.address = line.trim();
-      }
-
-      // Extract rating
-      const ratingMatch = line.match(/(\d[,\.]\d)\s*(?:estrelas?|⭐)/i);
-      if (ratingMatch && !currentCompany.rating) {
-        currentCompany.rating = ratingMatch[1];
-      }
-    }
-  }
-
-  // Don't forget the last company
-  if (currentCompany && currentCompany.name) {
-    companies.push(currentCompany);
-  }
-
-  return companies;
 }
