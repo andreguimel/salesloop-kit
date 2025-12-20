@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.test-cnpjws-premium]
 verify_jwt = false
+
+[functions.search-google-maps]
+verify_jwt = false
