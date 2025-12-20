@@ -84,9 +84,26 @@ serve(async (req) => {
 
     console.log('Response status:', response.status);
 
+    // Get response as text first to check for HTML
+    const responseText = await response.text();
+    console.log('Response body (first 200 chars):', responseText.substring(0, 200));
+
+    // Check if response is HTML (API not working properly)
+    if (responseText.trim().startsWith('<') || responseText.trim().startsWith('<!')) {
+      console.error('API returned HTML instead of JSON');
+      return new Response(
+        JSON.stringify({ 
+          error: 'A API Lista CNAE não está disponível no momento. A API requer autenticação via sessão do navegador.',
+          details: 'Entre em contato com o suporte da Lista CNAE para obter acesso à API REST.',
+          companies: [],
+          total: 0
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lista CNAE API error:', response.status, errorText);
+      console.error('Lista CNAE API error:', response.status, responseText);
       
       if (response.status === 401) {
         return new Response(
@@ -112,14 +129,28 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'Erro ao buscar empresas na API Lista CNAE',
-          details: errorText.substring(0, 200),
+          details: responseText.substring(0, 200),
           status: response.status
         }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse JSON:', parseError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Resposta inválida da API Lista CNAE',
+          details: responseText.substring(0, 100),
+          companies: [],
+          total: 0
+        }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     console.log('Lista CNAE response:', JSON.stringify(data).substring(0, 500));
 
