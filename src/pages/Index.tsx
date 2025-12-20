@@ -35,7 +35,6 @@ const Index = () => {
   const handleSearch = (filters: SearchFilters) => {
     setIsLoading(true);
     
-    // Simulate search delay
     setTimeout(() => {
       let filtered = [...mockCompanies];
 
@@ -83,7 +82,6 @@ const Index = () => {
   };
 
   const handleSendMessages = (channel: 'whatsapp' | 'sms' | 'both', templateId: string) => {
-    // Update message status for companies with selected phones
     setCompanies((prev) =>
       prev.map((company) => {
         if (selectedPhones[company.id]?.length > 0) {
@@ -92,92 +90,95 @@ const Index = () => {
         return company;
       })
     );
-
-    // Clear selections after sending
     setSelectedPhones({});
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container px-4 md:px-6 py-8 space-y-8">
-        {/* Hero Section */}
-        <div className="space-y-2 animate-fade-in">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Bem-vindo ao <span className="gradient-text">ProspectPro</span>
-          </h2>
-          <p className="text-muted-foreground max-w-2xl">
-            Encontre empresas, valide telefones e envie mensagens automatizadas de forma inteligente.
-          </p>
-        </div>
+    <div className="min-h-screen bg-background relative">
+      {/* Background decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+      </div>
 
-        {/* Metrics Dashboard */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            title="Empresas Encontradas"
-            value={metrics.totalCompanies}
-            icon={Building2}
-            variant="primary"
-            trend={{ value: 12, isPositive: true }}
-            delay={0}
-          />
-          <MetricCard
-            title="Telefones Válidos"
-            value={metrics.validPhones}
-            icon={Phone}
-            variant="success"
-            trend={{ value: 8, isPositive: true }}
-            delay={100}
-          />
-          <MetricCard
-            title="Mensagens Enviadas"
-            value={metrics.messagesSent}
-            icon={Send}
-            variant="default"
-            delay={200}
-          />
-          <MetricCard
-            title="Taxa de Sucesso"
-            value={`${metrics.messagesSent > 0 ? Math.round((metrics.messagesSent / (metrics.messagesSent + metrics.pendingMessages)) * 100) : 0}%`}
-            icon={TrendingUp}
-            variant="warning"
-            delay={300}
-          />
-        </div>
+      <div className="relative">
+        <Header />
+        
+        <main className="container px-4 md:px-8 py-8 space-y-8">
+          {/* Hero Section */}
+          <div className="space-y-3 animate-fade-up">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Prospecção <span className="text-gradient">Inteligente</span>
+            </h2>
+            <p className="text-muted-foreground max-w-xl">
+              Encontre empresas, valide telefones e envie mensagens automatizadas.
+            </p>
+          </div>
 
-        {/* Search Form */}
-        <SearchForm onSearch={handleSearch} isLoading={isLoading} />
+          {/* Metrics Dashboard */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="Empresas"
+              value={metrics.totalCompanies}
+              icon={Building2}
+              variant="primary"
+              trend={{ value: 12, isPositive: true }}
+              delay={0}
+            />
+            <MetricCard
+              title="Telefones Válidos"
+              value={metrics.validPhones}
+              icon={Phone}
+              variant="accent"
+              trend={{ value: 8, isPositive: true }}
+              delay={50}
+            />
+            <MetricCard
+              title="Mensagens Enviadas"
+              value={metrics.messagesSent}
+              icon={Send}
+              variant="success"
+              delay={100}
+            />
+            <MetricCard
+              title="Taxa de Sucesso"
+              value={`${metrics.messagesSent > 0 ? Math.round((metrics.messagesSent / (metrics.messagesSent + metrics.pendingMessages)) * 100) : 0}%`}
+              icon={TrendingUp}
+              variant="default"
+              delay={150}
+            />
+          </div>
 
-        {/* Main Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-          {/* Company Table */}
-          <CompanyTable
-            companies={companies}
-            onSelectPhones={handleSelectPhones}
-            selectedPhones={selectedPhones}
-          />
+          {/* Search Form */}
+          <SearchForm onSearch={handleSearch} isLoading={isLoading} />
 
-          {/* Message Panel */}
-          <MessagePanel
-            templates={templates}
-            onAddTemplate={handleAddTemplate}
-            onEditTemplate={handleEditTemplate}
-            onDeleteTemplate={handleDeleteTemplate}
-            selectedPhonesCount={selectedPhonesCount}
-            onSendMessages={handleSendMessages}
-          />
-        </div>
-      </main>
+          {/* Main Content Grid */}
+          <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+            <CompanyTable
+              companies={companies}
+              onSelectPhones={handleSelectPhones}
+              selectedPhones={selectedPhones}
+            />
+            <MessagePanel
+              templates={templates}
+              onAddTemplate={handleAddTemplate}
+              onEditTemplate={handleEditTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+              selectedPhonesCount={selectedPhonesCount}
+              onSendMessages={handleSendMessages}
+            />
+          </div>
+        </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 mt-16">
-        <div className="container px-4 md:px-6 py-6">
-          <p className="text-center text-sm text-muted-foreground">
-            © 2024 ProspectPro. Prospecção comercial inteligente.
-          </p>
-        </div>
-      </footer>
+        {/* Footer */}
+        <footer className="border-t border-border/30 mt-16">
+          <div className="container px-4 md:px-8 py-6">
+            <p className="text-center text-sm text-muted-foreground">
+              © 2024 ProspectPro — Prospecção comercial inteligente
+            </p>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 };

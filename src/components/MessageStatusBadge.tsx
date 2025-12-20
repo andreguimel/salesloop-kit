@@ -34,7 +34,7 @@ export function MessageStatusBadge({ status = 'none' }: MessageStatusBadgeProps)
   const Icon = config.icon;
 
   return (
-    <Badge variant={config.variant} className="gap-1">
+    <Badge variant={config.variant} className="gap-1 font-medium">
       <Icon className="h-3 w-3" />
       {config.label}
     </Badge>
