@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Building2, MapPin, Loader2, Plus, Check, Phone, Mail } from 'lucide-react';
+import { Search, Building2, MapPin, Loader2, Plus, Check, Phone, Mail, Briefcase } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -28,7 +27,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
-import { searchCompaniesByCnae, importCompanyFromSearch, fetchMunicipios, SearchCompanyResult } from '@/lib/api';
+import { searchCompaniesByCnae, importCompanyFromSearch, fetchMunicipios, fetchCnaes, SearchCompanyResult, Municipio, Cnae } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 interface SearchByCnaeDialogProps {
@@ -37,7 +36,9 @@ interface SearchByCnaeDialogProps {
 
 export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogProps) {
   const [open, setOpen] = useState(false);
-  const [cnae, setCnae] = useState('');
+  const [cnaeId, setCnaeId] = useState<string | null>(null);
+  const [cnaeSearch, setCnaeSearch] = useState('');
+  const [cnaePopoverOpen, setCnaePopoverOpen] = useState(false);
   const [municipioId, setMunicipioId] = useState<number | null>(null);
   const [municipioSearch, setMunicipioSearch] = useState('');
   const [municipioPopoverOpen, setMunicipioPopoverOpen] = useState(false);
@@ -47,14 +48,17 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
   const [results, setResults] = useState<SearchCompanyResult[]>([]);
   const [importingCnpjs, setImportingCnpjs] = useState<Set<string>>(new Set());
   const [importedCnpjs, setImportedCnpjs] = useState<Set<string>>(new Set());
-  const [municipios, setMunicipios] = useState<{ id: number; nome: string; uf: string }[]>([]);
+  const [municipios, setMunicipios] = useState<Municipio[]>([]);
+  const [cnaes, setCnaes] = useState<Cnae[]>([]);
   const [loadingMunicipios, setLoadingMunicipios] = useState(false);
+  const [loadingCnaes, setLoadingCnaes] = useState(false);
   const { toast } = useToast();
 
-  // Load municipalities when dialog opens
+  // Load data when dialog opens
   useEffect(() => {
-    if (open && municipios.length === 0) {
-      loadMunicipios();
+    if (open) {
+      if (municipios.length === 0) loadMunicipios();
+      if (cnaes.length === 0) loadCnaes();
     }
   }, [open]);
 
@@ -75,6 +79,23 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
     }
   };
 
+  const loadCnaes = async () => {
+    setLoadingCnaes(true);
+    try {
+      const data = await fetchCnaes();
+      setCnaes(data);
+    } catch (error) {
+      console.error('Error loading CNAEs:', error);
+      toast({
+        title: 'Erro ao carregar CNAEs',
+        description: 'Não foi possível carregar a lista de CNAEs',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingCnaes(false);
+    }
+  };
+
   // Filter municipalities based on search
   const filteredMunicipios = useMemo(() => {
     if (!municipioSearch.trim()) return municipios.slice(0, 100);
@@ -87,15 +108,32 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
       .slice(0, 100);
   }, [municipios, municipioSearch]);
 
+  // Filter CNAEs based on search
+  const filteredCnaes = useMemo(() => {
+    if (!cnaeSearch.trim()) return cnaes.slice(0, 100);
+    const search = cnaeSearch.toLowerCase();
+    return cnaes
+      .filter(c => 
+        c.id.includes(cnaeSearch) ||
+        c.descricao.toLowerCase().includes(search) ||
+        c.classe.toLowerCase().includes(search)
+      )
+      .slice(0, 100);
+  }, [cnaes, cnaeSearch]);
+
   const selectedMunicipio = useMemo(() => {
     return municipios.find(m => m.id === municipioId);
   }, [municipios, municipioId]);
 
+  const selectedCnae = useMemo(() => {
+    return cnaes.find(c => c.id === cnaeId);
+  }, [cnaes, cnaeId]);
+
   const handleSearch = async () => {
-    if (!cnae.trim() || !municipioId) {
+    if (!cnaeId || !municipioId) {
       toast({
         title: 'Campos obrigatórios',
-        description: 'Informe o CNAE e selecione o município',
+        description: 'Selecione o CNAE e o município',
         variant: 'destructive',
       });
       return;
@@ -106,7 +144,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
 
     try {
       const response = await searchCompaniesByCnae({
-        cnae: cnae.trim(),
+        cnae: cnaeId,
         municipio: municipioId.toString(),
         quantidade: 50,
         telefoneObrigatorio,
@@ -176,7 +214,8 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
 
   const handleClose = () => {
     setOpen(false);
-    setCnae('');
+    setCnaeId(null);
+    setCnaeSearch('');
     setMunicipioId(null);
     setMunicipioSearch('');
     setResults([]);
@@ -207,19 +246,83 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
         <div className="space-y-4">
           {/* Search Form */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* CNAE Autocomplete */}
             <div className="space-y-2">
-              <Label htmlFor="cnae">Código CNAE</Label>
-              <Input
-                id="cnae"
-                placeholder="Ex: 6202300 (Desenvolvimento de Software)"
-                value={cnae}
-                onChange={(e) => setCnae(e.target.value)}
-                disabled={isSearching}
-              />
+              <Label>Atividade (CNAE)</Label>
+              <Popover open={cnaePopoverOpen} onOpenChange={setCnaePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={cnaePopoverOpen}
+                    className="w-full justify-between font-normal h-auto min-h-10 text-left"
+                    disabled={isSearching || loadingCnaes}
+                  >
+                    {loadingCnaes ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Carregando CNAEs...
+                      </span>
+                    ) : selectedCnae ? (
+                      <div className="flex flex-col items-start gap-0.5 py-1">
+                        <span className="font-medium text-xs text-muted-foreground">{selectedCnae.id}</span>
+                        <span className="text-sm line-clamp-2">{selectedCnae.descricao}</span>
+                      </div>
+                    ) : (
+                      "Buscar atividade econômica..."
+                    )}
+                    <Briefcase className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[450px] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Digite código ou descrição do CNAE..."
+                      value={cnaeSearch}
+                      onValueChange={setCnaeSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {loadingCnaes ? 'Carregando...' : 'Nenhum CNAE encontrado.'}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        <ScrollArea className="h-[300px]">
+                          {filteredCnaes.map((cnae) => (
+                            <CommandItem
+                              key={cnae.id}
+                              value={cnae.id}
+                              onSelect={() => {
+                                setCnaeId(cnae.id);
+                                setCnaePopoverOpen(false);
+                              }}
+                              className="flex flex-col items-start py-2"
+                            >
+                              <div className="flex items-center w-full">
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4 shrink-0",
+                                    cnaeId === cnae.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col flex-1 min-w-0">
+                                  <span className="font-medium text-xs text-muted-foreground">{cnae.id}</span>
+                                  <span className="text-sm truncate">{cnae.descricao}</span>
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </ScrollArea>
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <p className="text-xs text-muted-foreground">
-                Apenas números. Ex: 6202300
+                Digite o código ou descrição da atividade
               </p>
             </div>
+
+            {/* Municipality Autocomplete */}
             <div className="space-y-2">
               <Label>Município</Label>
               <Popover open={municipioPopoverOpen} onOpenChange={setMunicipioPopoverOpen}>
@@ -252,26 +355,30 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
                       onValueChange={setMunicipioSearch}
                     />
                     <CommandList>
-                      <CommandEmpty>Nenhum município encontrado.</CommandEmpty>
+                      <CommandEmpty>
+                        {loadingMunicipios ? 'Carregando...' : 'Nenhum município encontrado.'}
+                      </CommandEmpty>
                       <CommandGroup>
-                        {filteredMunicipios.map((mun) => (
-                          <CommandItem
-                            key={mun.id}
-                            value={mun.id.toString()}
-                            onSelect={() => {
-                              setMunicipioId(mun.id);
-                              setMunicipioPopoverOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                municipioId === mun.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {mun.nome} - {mun.uf}
-                          </CommandItem>
-                        ))}
+                        <ScrollArea className="h-[300px]">
+                          {filteredMunicipios.map((mun) => (
+                            <CommandItem
+                              key={mun.id}
+                              value={mun.id.toString()}
+                              onSelect={() => {
+                                setMunicipioId(mun.id);
+                                setMunicipioPopoverOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  municipioId === mun.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {mun.nome} - {mun.uf}
+                            </CommandItem>
+                          ))}
+                        </ScrollArea>
                       </CommandGroup>
                     </CommandList>
                   </Command>
@@ -339,7 +446,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
 
           {/* Results */}
           {results.length > 0 && (
-            <ScrollArea className="h-[400px] border rounded-lg">
+            <ScrollArea className="h-[350px] border rounded-lg">
               <div className="p-4 space-y-3">
                 {results.map((company) => (
                   <div
