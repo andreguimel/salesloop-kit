@@ -73,53 +73,50 @@ serve(async (req) => {
 
     console.log('Request body:', JSON.stringify(requestBody));
 
-    // Try multiple API URL formats
-    const apiUrls = [
-      'https://listacnae.com.br/api/v1/buscar',
-      'https://api.listacnae.com.br/buscar',
-      'https://api.listacnae.com.br/v1/buscar',
-    ];
+    // Lista CNAE API uses GET method with JSON body (as per documentation)
+    // The /api/v1/buscar endpoint returned 405 for POST, so it expects GET
+    const apiUrl = 'https://listacnae.com.br/api/v1/buscar';
+    
+    console.log('Calling API:', apiUrl, 'with GET method and JSON body');
 
-    let response: Response | null = null;
-    let lastError = '';
+    // Some APIs accept body with GET - this is non-standard but some services use it
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
 
-    for (const apiUrl of apiUrls) {
-      console.log('Trying URL:', apiUrl);
+    console.log('Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Lista CNAE API error:', response.status, errorText);
       
-      try {
-        response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        console.log('Response status for', apiUrl, ':', response.status);
-
-        if (response.ok) {
-          break;
-        }
-
-        lastError = await response.text();
-        console.log('Error response:', lastError);
-      } catch (err) {
-        console.error('Fetch error for', apiUrl, ':', err);
-        lastError = err instanceof Error ? err.message : 'Fetch error';
+      if (response.status === 401) {
+        return new Response(
+          JSON.stringify({ error: 'Token inválido ou expirado. Verifique o token da Lista CNAE.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-    }
-
-    if (!response || !response.ok) {
-      console.error('All API URLs failed. Last error:', lastError);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Limite de requisições excedido. Aguarde um momento.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       
       return new Response(
         JSON.stringify({ 
-          error: 'Erro ao conectar com a API Lista CNAE. Verifique se o token está correto.',
-          details: lastError.substring(0, 200)
+          error: 'Erro ao buscar empresas na API Lista CNAE',
+          details: errorText.substring(0, 200),
+          status: response.status
         }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
