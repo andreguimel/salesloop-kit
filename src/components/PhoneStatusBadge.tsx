@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Phone } from '@/types';
 
@@ -22,6 +22,11 @@ const statusConfig = {
     label: 'Inválido',
     icon: XCircle,
     variant: 'invalid' as const,
+  },
+  pending: {
+    label: 'Pendente',
+    icon: Clock,
+    variant: 'pending' as const,
   },
 };
 
