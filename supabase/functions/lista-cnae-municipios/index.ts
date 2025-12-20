@@ -5,13 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Try multiple base URLs based on dashboard URL pattern
-const API_URLS = [
-  'https://listacnae.com.br/app/api/todosMunicipios',
-  'https://listacnae.com.br/app/todosMunicipios',
-  'https://listacnae.com.br/todosMunicipios',
-];
-
 // Cache for municipalities
 let cachedMunicipios: { id: number; nome: string; uf: string }[] | null = null;
 
@@ -41,23 +34,46 @@ serve(async (req) => {
       );
     }
 
+    // Try different combinations of URL, method, and auth
+    const attempts = [
+      // Try with token as query param
+      { url: `https://listacnae.com.br/todosMunicipios?token=${token}`, method: 'GET', headers: {} },
+      // Try with Authorization header (no Bearer)
+      { url: 'https://listacnae.com.br/todosMunicipios', method: 'GET', headers: { 'Authorization': token } },
+      // Try with Bearer
+      { url: 'https://listacnae.com.br/todosMunicipios', method: 'GET', headers: { 'Authorization': `Bearer ${token}` } },
+      // Try POST with token in body
+      { url: 'https://listacnae.com.br/todosMunicipios', method: 'POST', headers: {}, body: JSON.stringify({ token }) },
+      // Try /app/api path with token as query
+      { url: `https://listacnae.com.br/app/api/todosMunicipios?token=${token}`, method: 'GET', headers: {} },
+    ];
+
     let lastError = '';
     let successData = null;
 
-    // Try each URL with Bearer auth
-    for (const apiUrl of API_URLS) {
-      console.log('Trying URL:', apiUrl);
-      console.log('Using token (first 10 chars):', token.substring(0, 10) + '...');
+    for (const attempt of attempts) {
+      console.log('Trying:', attempt.method, attempt.url.substring(0, 80));
       
       try {
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-        });
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        };
+        
+        if (attempt.headers.Authorization) {
+          headers['Authorization'] = attempt.headers.Authorization;
+        }
+        
+        const fetchOptions: RequestInit = {
+          method: attempt.method,
+          headers,
+        };
+        
+        if (attempt.body) {
+          fetchOptions.body = attempt.body;
+        }
+
+        const response = await fetch(attempt.url, fetchOptions);
 
         console.log('Response status:', response.status);
 
@@ -66,32 +82,32 @@ serve(async (req) => {
 
         // Skip if HTML response
         if (responseText.trim().startsWith('<') || responseText.trim().startsWith('<!')) {
-          console.log('Got HTML response, trying next URL...');
-          lastError = 'API retornou HTML para ' + apiUrl;
+          console.log('Got HTML response, trying next...');
+          lastError = 'API retornou HTML';
           continue;
         }
 
         if (!response.ok) {
           console.log('Non-OK response:', response.status);
-          lastError = `${apiUrl}: ${response.status} - ${responseText.substring(0, 100)}`;
+          lastError = `${response.status} - ${responseText.substring(0, 100)}`;
           continue;
         }
 
         const data = JSON.parse(responseText);
-        console.log('Success! Received', Array.isArray(data) ? data.length : 'object', 'from', apiUrl);
+        console.log('Success! Received', Array.isArray(data) ? data.length : 'object');
         successData = data;
         break;
 
       } catch (urlError) {
-        console.error('Error with URL', apiUrl, ':', urlError);
-        lastError = `${apiUrl}: ${urlError instanceof Error ? urlError.message : 'Unknown error'}`;
+        console.error('Error:', urlError);
+        lastError = urlError instanceof Error ? urlError.message : 'Unknown error';
       }
     }
 
     if (!successData) {
-      console.error('All URLs failed. Last error:', lastError);
+      console.error('All attempts failed. Last error:', lastError);
       return new Response(
-        JSON.stringify({ error: 'Erro ao buscar municípios. Verifique se o token está correto.', details: lastError }),
+        JSON.stringify({ error: 'Erro ao buscar municípios. A API Lista CNAE pode não estar disponível como endpoint REST.', details: lastError }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
