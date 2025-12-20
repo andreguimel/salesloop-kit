@@ -13,8 +13,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { searchCompaniesByCnae, importCompanyFromSearch, SearchCompanyResult } from '@/lib/api';
+
+const NATUREZAS_JURIDICAS = [
+  { value: '2062', label: 'Sociedade Empresária Limitada' },
+  { value: '2135', label: 'Empresário Individual (MEI)' },
+  { value: '2305', label: 'EIRELI (Natureza Empresária)' },
+  { value: '2313', label: 'EIRELI (Natureza Simples)' },
+  { value: '2143', label: 'Cooperativa' },
+  { value: '2046', label: 'Sociedade Anônima Fechada' },
+  { value: '2054', label: 'Sociedade Anônima Aberta' },
+];
 
 interface SearchByCnaeDialogProps {
   onCompaniesImported: () => void;
@@ -24,6 +41,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
   const [open, setOpen] = useState(false);
   const [cnae, setCnae] = useState('');
   const [municipio, setMunicipio] = useState('');
+  const [naturezaJuridica, setNaturezaJuridica] = useState('2062');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchCompanyResult[]>([]);
   const [importingCnpjs, setImportingCnpjs] = useState<Set<string>>(new Set());
@@ -47,6 +65,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
       const response = await searchCompaniesByCnae({
         cnae: cnae.trim(),
         municipio: municipio.trim(),
+        naturezaJuridica: naturezaJuridica,
         top: 50,
       });
 
@@ -167,6 +186,23 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
                 Código IBGE. Ex: 4106902
               </p>
             </div>
+          </div>
+
+          {/* Natureza Jurídica */}
+          <div className="space-y-2">
+            <Label htmlFor="natureza">Natureza Jurídica</Label>
+            <Select value={naturezaJuridica} onValueChange={setNaturezaJuridica} disabled={isSearching}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a natureza jurídica" />
+              </SelectTrigger>
+              <SelectContent>
+                {NATUREZAS_JURIDICAS.map((nj) => (
+                  <SelectItem key={nj.value} value={nj.value}>
+                    {nj.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex gap-2">
