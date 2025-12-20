@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -374,6 +375,9 @@ export function SearchCompaniesDialog({ open, onOpenChange, onCompaniesImported 
             </div>
             Buscar Empresas por CNAE
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Busque empresas por CNAE, cidade ou estado para importar para sua lista
+          </DialogDescription>
         </DialogHeader>
 
         {/* Search Form */}
