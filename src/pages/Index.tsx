@@ -6,7 +6,7 @@ import { SearchForm } from '@/components/SearchForm';
 import { CompanyTable } from '@/components/CompanyTable';
 import { MessagePanel } from '@/components/MessagePanel';
 import { AddCompanyDialog } from '@/components/AddCompanyDialog';
-import { SearchCompaniesDialog } from '@/components/SearchCompaniesDialog';
+import { SearchByCnpjDialog } from '@/components/SearchByCnpjDialog';
 import { ExportCsvDialog } from '@/components/ExportCsvDialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -286,7 +286,7 @@ const Index = () => {
                 className="gap-2 border-primary/30 hover:bg-primary/10"
               >
                 <Search className="h-4 w-4" />
-                Buscar por CNAE
+                Buscar por CNPJ
               </Button>
               {filteredCompanies.length > 0 && (
                 <Button 
@@ -378,10 +378,10 @@ const Index = () => {
         onCompanyAdded={handleCompanyAdded}
       />
 
-      <SearchCompaniesDialog
+      <SearchByCnpjDialog
         open={showSearchCompanies}
         onOpenChange={setShowSearchCompanies}
-        onCompaniesImported={handleCompaniesImported}
+        onCompanyImported={handleCompaniesImported}
       />
 
       <ExportCsvDialog

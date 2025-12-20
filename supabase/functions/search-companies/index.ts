@@ -6,10 +6,7 @@ const corsHeaders = {
 };
 
 interface SearchParams {
-  cnae?: string;
-  cidade?: string;
-  uf?: string;
-  page?: number;
+  cnpj: string;
 }
 
 serve(async (req) => {
@@ -29,44 +26,29 @@ serve(async (req) => {
       );
     }
 
-    const { cnae, cidade, uf, page = 1 }: SearchParams = await req.json();
+    const { cnpj }: SearchParams = await req.json();
 
-    console.log('Search params:', { cnae, cidade, uf, page });
+    if (!cnpj) {
+      return new Response(
+        JSON.stringify({ error: 'CNPJ é obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Build query parameters for CNPJ.ws API - using /pesquisa endpoint
-    const params = new URLSearchParams();
-    
-    if (cnae) {
-      // Remove formatting from CNAE (e.g., "6201-5/01" -> "6201501")
-      const cleanCnae = cnae.replace(/[-\/]/g, '');
-      params.append('atividade_principal_id', cleanCnae);
-    }
-    
-    if (cidade) {
-      // Note: cidade_id expects IBGE code, but we'll try with the name for now
-      params.append('razao_social', cidade); // Workaround - search by name containing city
-    }
-    
-    if (uf) {
-      // Map UF to IBGE state codes
-      const ufToIbge: Record<string, string> = {
-        'AC': '12', 'AL': '27', 'AP': '16', 'AM': '13', 'BA': '29',
-        'CE': '23', 'DF': '53', 'ES': '32', 'GO': '52', 'MA': '21',
-        'MT': '51', 'MS': '50', 'MG': '31', 'PA': '15', 'PB': '25',
-        'PR': '41', 'PE': '26', 'PI': '22', 'RJ': '33', 'RN': '24',
-        'RS': '43', 'RO': '11', 'RR': '14', 'SC': '42', 'SP': '35',
-        'SE': '28', 'TO': '17'
-      };
-      const estadoId = ufToIbge[uf.toUpperCase()];
-      if (estadoId) {
-        params.append('estado_id', estadoId);
-      }
-    }
-    
-    // Only active companies
-    params.append('situacao_cadastral', 'Ativa');
+    // Clean CNPJ - remove formatting
+    const cleanCnpj = cnpj.replace(/[^\d]/g, '');
 
-    const apiUrl = `https://comercial.cnpj.ws/pesquisa?${params.toString()}`;
+    if (cleanCnpj.length !== 14) {
+      return new Response(
+        JSON.stringify({ error: 'CNPJ deve ter 14 dígitos' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Searching for CNPJ:', cleanCnpj);
+
+    // Call CNPJ.ws API - individual CNPJ lookup (available in Basic plan)
+    const apiUrl = `https://comercial.cnpj.ws/cnpj/${cleanCnpj}`;
     
     console.log('Calling CNPJ.ws API:', apiUrl);
 
@@ -74,7 +56,7 @@ serve(async (req) => {
       method: 'GET',
       headers: {
         'x_api_token': CNPJWS_API_KEY,
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
 
@@ -89,6 +71,13 @@ serve(async (req) => {
         );
       }
       
+      if (response.status === 404) {
+        return new Response(
+          JSON.stringify({ error: 'CNPJ não encontrado' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: 'Créditos insuficientes na API CNPJ.ws' }),
@@ -97,47 +86,55 @@ serve(async (req) => {
       }
       
       return new Response(
-        JSON.stringify({ error: 'Erro ao buscar empresas na API' }),
+        JSON.stringify({ error: 'Erro ao buscar empresa na API' }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const data = await response.json();
     
-    console.log('CNPJ.ws response:', JSON.stringify(data).slice(0, 500));
+    console.log('CNPJ.ws response:', JSON.stringify(data).slice(0, 1000));
 
     // Transform the response to our format
-    // The /pesquisa endpoint returns a different structure
-    const records = data.records || data.empresas || data.data || [];
-    const companies = records.map((company: any) => {
-      // Handle nested structure from /pesquisa endpoint
-      const estabelecimento = company.estabelecimento || company;
-      const atividadePrincipal = estabelecimento.atividade_principal || company.atividade_principal || {};
-      
-      return {
-        cnpj: estabelecimento.cnpj || company.cnpj || '',
-        name: company.razao_social || estabelecimento.razao_social || 'Empresa sem nome',
-        fantasyName: estabelecimento.nome_fantasia || company.nome_fantasia || '',
-        cnae: atividadePrincipal.id || atividadePrincipal.codigo || estabelecimento.cnae_fiscal || '',
-        cnaeDescription: atividadePrincipal.descricao || estabelecimento.cnae_fiscal_descricao || '',
-        city: estabelecimento.cidade?.nome || estabelecimento.municipio || company.municipio || '',
-        state: estabelecimento.estado?.sigla || estabelecimento.uf || company.uf || '',
-        phone1: estabelecimento.telefone1 || estabelecimento.ddd_telefone_1 || company.ddd_telefone_1 || '',
-        phone2: estabelecimento.telefone2 || estabelecimento.ddd_telefone_2 || company.ddd_telefone_2 || '',
-        email: estabelecimento.email || company.email || '',
-        address: estabelecimento.logradouro || company.logradouro || '',
-        number: estabelecimento.numero || company.numero || '',
-        neighborhood: estabelecimento.bairro || company.bairro || '',
-        cep: estabelecimento.cep || company.cep || '',
-      };
-    });
+    // The individual CNPJ endpoint has a nested structure
+    const estabelecimento = data.estabelecimento || {};
+    const atividadePrincipal = estabelecimento.atividade_principal || {};
+    
+    // Build phone numbers with DDD
+    const phone1 = estabelecimento.ddd1 && estabelecimento.telefone1 
+      ? `${estabelecimento.ddd1}${estabelecimento.telefone1}` 
+      : '';
+    const phone2 = estabelecimento.ddd2 && estabelecimento.telefone2 
+      ? `${estabelecimento.ddd2}${estabelecimento.telefone2}` 
+      : '';
+
+    const company = {
+      cnpj: estabelecimento.cnpj || cleanCnpj,
+      name: data.razao_social || 'Empresa sem nome',
+      fantasyName: estabelecimento.nome_fantasia || '',
+      cnae: atividadePrincipal.id || atividadePrincipal.subclasse || '',
+      cnaeDescription: atividadePrincipal.descricao || '',
+      city: estabelecimento.cidade?.nome || '',
+      state: estabelecimento.estado?.sigla || '',
+      phone1: phone1,
+      phone2: phone2,
+      email: estabelecimento.email || '',
+      address: estabelecimento.logradouro || '',
+      number: estabelecimento.numero || '',
+      neighborhood: estabelecimento.bairro || '',
+      cep: estabelecimento.cep || '',
+      // Additional data available from CNPJ.ws
+      capitalSocial: data.capital_social || '',
+      naturezaJuridica: data.natureza_juridica?.descricao || '',
+      porte: data.porte?.descricao || '',
+      situacao: estabelecimento.situacao_cadastral || '',
+      dataAbertura: estabelecimento.data_inicio_atividade || '',
+    };
 
     return new Response(
       JSON.stringify({
-        companies,
-        total: data.total || data.count || companies.length,
-        page: page,
-        hasMore: companies.length === 50,
+        company,
+        success: true,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Company, MessageTemplate } from '@/types';
 
-// Search Companies via CNPJ.ws API
+// Search Company by CNPJ via CNPJ.ws API
 export interface SearchCompanyResult {
   cnpj: string;
   name: string;
@@ -17,28 +17,27 @@ export interface SearchCompanyResult {
   number: string;
   neighborhood: string;
   cep: string;
+  // Additional data from CNPJ.ws
+  capitalSocial?: string;
+  naturezaJuridica?: string;
+  porte?: string;
+  situacao?: string;
+  dataAbertura?: string;
 }
 
-export interface SearchCompaniesResponse {
-  companies: SearchCompanyResult[];
-  total: number;
-  page: number;
-  hasMore: boolean;
+export interface SearchCompanyByCnpjResponse {
+  company: SearchCompanyResult;
+  success: boolean;
 }
 
-export async function searchCompaniesAPI(params: {
-  cnae?: string;
-  cidade?: string;
-  uf?: string;
-  page?: number;
-}): Promise<SearchCompaniesResponse> {
+export async function searchCompanyByCnpj(cnpj: string): Promise<SearchCompanyByCnpjResponse> {
   const { data, error } = await supabase.functions.invoke('search-companies', {
-    body: params,
+    body: { cnpj },
   });
 
   if (error) {
-    console.error('Error searching companies:', error);
-    throw new Error(error.message || 'Erro ao buscar empresas');
+    console.error('Error searching company:', error);
+    throw new Error(error.message || 'Erro ao buscar empresa');
   }
 
   if (data.error) {
