@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.lista-cnae-cnaes]
 verify_jwt = false
+
+[functions.check-cnpjws-account]
+verify_jwt = false
+
+[functions.test-cnpjws-premium]
+verify_jwt = false
