@@ -179,7 +179,7 @@ export function SearchByCnpjDialog({ open, onOpenChange, onCompanyImported }: Se
           <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/10">
             <Info className="h-4 w-4 text-primary shrink-0" />
             <p className="text-xs text-muted-foreground">
-              Consulta os dados oficiais da Receita Federal via CNPJ.ws
+              Consulta os dados oficiais da Receita Federal em tempo real via CNPJá
             </p>
           </div>
         </div>
@@ -277,7 +277,7 @@ export function SearchByCnpjDialog({ open, onOpenChange, onCompanyImported }: Se
               <div className="col-span-2 flex flex-wrap gap-2 pt-2 border-t border-border/50">
                 {result.situacao && (
                   <Badge 
-                    variant={result.situacao === 'Ativa' ? 'default' : 'destructive'}
+                    variant={result.situacao.toLowerCase().includes('ativ') ? 'default' : 'destructive'}
                     className="text-xs"
                   >
                     {result.situacao}
@@ -291,6 +291,16 @@ export function SearchByCnpjDialog({ open, onOpenChange, onCompanyImported }: Se
                 {result.naturezaJuridica && (
                   <Badge variant="outline" className="text-xs">
                     {result.naturezaJuridica}
+                  </Badge>
+                )}
+                {result.simples === 'Sim' && (
+                  <Badge variant="secondary" className="text-xs">
+                    Simples Nacional
+                  </Badge>
+                )}
+                {result.mei === 'Sim' && (
+                  <Badge variant="secondary" className="text-xs">
+                    MEI
                   </Badge>
                 )}
               </div>
