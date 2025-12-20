@@ -8,6 +8,7 @@ import { MessagePanel } from '@/components/MessagePanel';
 import { AddCompanyDialog } from '@/components/AddCompanyDialog';
 import { SearchByCnpjDialog } from '@/components/SearchByCnpjDialog';
 import { SearchByCnaeDialog } from '@/components/SearchByCnaeDialog';
+import { SearchGoogleMapsDialog } from '@/components/SearchGoogleMapsDialog';
 import { ExportCsvDialog } from '@/components/ExportCsvDialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -281,6 +282,7 @@ const Index = () => {
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <SearchGoogleMapsDialog onCompaniesImported={handleCompaniesImported} />
               <SearchByCnaeDialog onCompaniesImported={handleCompaniesImported} />
               <Button 
                 onClick={() => setShowSearchCompanies(true)}

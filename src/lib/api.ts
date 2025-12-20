@@ -139,6 +139,93 @@ export async function fetchCnaes(): Promise<Cnae[]> {
   return cachedCnaes;
 }
 
+// Search Companies via Google Maps (Firecrawl)
+export interface GoogleMapsCompany {
+  name: string;
+  phone1: string;
+  address: string;
+  website: string;
+  rating: string;
+  reviews: string;
+  source: string;
+}
+
+export interface SearchGoogleMapsResponse {
+  companies: GoogleMapsCompany[];
+  total: number;
+  success: boolean;
+  query: string;
+}
+
+export async function searchGoogleMaps(query: string, limit = 20): Promise<SearchGoogleMapsResponse> {
+  const { data, error } = await supabase.functions.invoke('search-google-maps', {
+    body: { query, limit },
+  });
+
+  if (error) {
+    console.error('Error searching Google Maps:', error);
+    throw new Error(error.message || 'Erro ao buscar no Google Maps');
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
+// Import company from Google Maps result
+export async function importCompanyFromGoogleMaps(company: GoogleMapsCompany) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Create the company
+  const { data: newCompany, error: companyError } = await supabase
+    .from('companies')
+    .insert({
+      user_id: user.id,
+      name: company.name,
+      cnae: '',
+      cnae_description: '',
+      city: extractCityFromAddress(company.address),
+      state: extractStateFromAddress(company.address),
+      segment: null,
+    })
+    .select()
+    .single();
+
+  if (companyError) throw companyError;
+
+  // Add phone if available
+  if (company.phone1) {
+    await supabase.from('company_phones').insert({
+      company_id: newCompany.id,
+      phone_number: company.phone1,
+      phone_type: company.phone1.length > 10 ? 'mobile' : 'landline',
+      status: 'pending',
+    });
+  }
+
+  return newCompany;
+}
+
+function extractCityFromAddress(address: string): string {
+  if (!address) return '';
+  // Try to extract city from Brazilian address format
+  const parts = address.split('-');
+  if (parts.length >= 2) {
+    return parts[parts.length - 2]?.trim() || '';
+  }
+  return '';
+}
+
+function extractStateFromAddress(address: string): string {
+  if (!address) return '';
+  // Try to extract state abbreviation
+  const stateMatch = address.match(/\b([A-Z]{2})\b/);
+  return stateMatch ? stateMatch[1] : '';
+}
+
 // Companies
 export async function fetchCompanies() {
   const { data, error } = await supabase
