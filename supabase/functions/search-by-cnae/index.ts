@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface SearchParams {
   cnae: string;
-  municipio: string; // Now accepts IBGE code as string
+  municipio: string;
   quantidade?: number;
   inicio?: number;
   telefoneObrigatorio?: boolean;
@@ -56,18 +56,12 @@ serve(async (req) => {
     console.log('Searching Lista CNAE for CNAE:', cleanCnae, 'Municipality IBGE Code:', cleanMunicipio);
 
     // Build request body for Lista CNAE API
-    // The API expects the municipio ID from Lista CNAE, not IBGE code
-    // We'll pass it directly and let the API handle it
     const requestBody: Record<string, any> = {
       inicio: inicio,
       quantidade: quantidade,
       cnaes: [parseInt(cleanCnae)],
+      municipios: [parseInt(cleanMunicipio)],
     };
-
-    // Try with IBGE code directly - Lista CNAE may accept it
-    if (cleanMunicipio) {
-      requestBody.municipios = [parseInt(cleanMunicipio)];
-    }
 
     if (telefoneObrigatorio) {
       requestBody.telefone_obrigatorio = true;
@@ -79,40 +73,53 @@ serve(async (req) => {
 
     console.log('Request body:', JSON.stringify(requestBody));
 
-    // Lista CNAE API uses GET with query params sent as body
-    const response = await fetch('https://listacnae.com.br/api/buscar', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
+    // Try multiple API URL formats
+    const apiUrls = [
+      'https://listacnae.com.br/api/v1/buscar',
+      'https://api.listacnae.com.br/buscar',
+      'https://api.listacnae.com.br/v1/buscar',
+    ];
 
-    console.log('Response status:', response.status);
+    let response: Response | null = null;
+    let lastError = '';
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lista CNAE API error:', response.status, errorText);
+    for (const apiUrl of apiUrls) {
+      console.log('Trying URL:', apiUrl);
       
-      if (response.status === 401) {
-        return new Response(
-          JSON.stringify({ error: 'Token inválido ou expirado' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      try {
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        console.log('Response status for', apiUrl, ':', response.status);
+
+        if (response.ok) {
+          break;
+        }
+
+        lastError = await response.text();
+        console.log('Error response:', lastError);
+      } catch (err) {
+        console.error('Fetch error for', apiUrl, ':', err);
+        lastError = err instanceof Error ? err.message : 'Fetch error';
       }
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Limite de requisições excedido. Aguarde um momento.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    }
+
+    if (!response || !response.ok) {
+      console.error('All API URLs failed. Last error:', lastError);
       
       return new Response(
-        JSON.stringify({ error: 'Erro ao buscar empresas na API Lista CNAE: ' + errorText }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'Erro ao conectar com a API Lista CNAE. Verifique se o token está correto.',
+          details: lastError.substring(0, 200)
+        }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -121,7 +128,6 @@ serve(async (req) => {
     console.log('Lista CNAE response:', JSON.stringify(data).substring(0, 500));
 
     // Transform the response to our format
-    // Lista CNAE returns an array of companies
     const companiesArray = data.empresas || data.data || data || [];
     const companies = companiesArray.map((item: any) => ({
       cnpj: item.cnpj || '',
