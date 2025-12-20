@@ -114,7 +114,9 @@ function isGenericResult(name: string): boolean {
   const genericTerms = [
     'results', 'map tools', 'map type', 'google maps', 'sign in',
     'get the most out', 'pesquisa', 'busca', 'home', 'menu',
-    'collapse', 'expand', 'rating', 'hours', 'filters'
+    'collapse', 'expand', 'rating', 'hours', 'filters',
+    'page not found', '404', 'error', 'não encontrado', 'access denied',
+    'linkedin', 'facebook', 'instagram', 'twitter', 'youtube'
   ];
   const lowerName = name.toLowerCase();
   return genericTerms.some(term => lowerName.includes(term));
