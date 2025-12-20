@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.search-google-maps]
 verify_jwt = false
+
+[functions.search-by-cep]
+verify_jwt = false
