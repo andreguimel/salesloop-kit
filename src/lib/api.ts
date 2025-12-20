@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Company, MessageTemplate } from '@/types';
 
-// Search Company by CNPJ via CNPJ.ws API
+// Search Company by CNPJ via CNPJá API
 export interface SearchCompanyResult {
   cnpj: string;
   name: string;
@@ -17,12 +17,14 @@ export interface SearchCompanyResult {
   number: string;
   neighborhood: string;
   cep: string;
-  // Additional data from CNPJ.ws
+  // Additional data from CNPJá
   capitalSocial?: string;
   naturezaJuridica?: string;
   porte?: string;
   situacao?: string;
   dataAbertura?: string;
+  simples?: string;
+  mei?: string;
 }
 
 export interface SearchCompanyByCnpjResponse {
@@ -31,7 +33,7 @@ export interface SearchCompanyByCnpjResponse {
 }
 
 export async function searchCompanyByCnpj(cnpj: string): Promise<SearchCompanyByCnpjResponse> {
-  const { data, error } = await supabase.functions.invoke('search-companies', {
+  const { data, error } = await supabase.functions.invoke('search-cnpja', {
     body: { cnpj },
   });
 

@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.search-by-cep]
 verify_jwt = false
+
+[functions.search-cnpja]
+verify_jwt = false
