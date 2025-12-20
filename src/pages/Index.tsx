@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Building2, Phone, Send, TrendingUp, Plus, Loader2, Search } from 'lucide-react';
+import { Building2, Phone, Send, TrendingUp, Plus, Loader2, Search, Download } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { MetricCard } from '@/components/MetricCard';
 import { SearchForm } from '@/components/SearchForm';
@@ -7,6 +7,7 @@ import { CompanyTable } from '@/components/CompanyTable';
 import { MessagePanel } from '@/components/MessagePanel';
 import { AddCompanyDialog } from '@/components/AddCompanyDialog';
 import { SearchCompaniesDialog } from '@/components/SearchCompaniesDialog';
+import { ExportCsvDialog } from '@/components/ExportCsvDialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -52,6 +53,7 @@ const Index = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [showSearchCompanies, setShowSearchCompanies] = useState(false);
+  const [showExportCsv, setShowExportCsv] = useState(false);
   const [metrics, setMetrics] = useState({ totalCompanies: 0, validPhones: 0, messagesSent: 0, pendingMessages: 0 });
   
   const { toast } = useToast();
@@ -286,6 +288,16 @@ const Index = () => {
                 <Search className="h-4 w-4" />
                 Buscar por CNAE
               </Button>
+              {filteredCompanies.length > 0 && (
+                <Button 
+                  onClick={() => setShowExportCsv(true)}
+                  variant="outline"
+                  className="gap-2 border-accent/30 hover:bg-accent/10"
+                >
+                  <Download className="h-4 w-4" />
+                  Exportar CSV
+                </Button>
+              )}
               <Button 
                 onClick={() => setShowAddCompany(true)}
                 className="gap-2 gradient-primary hover:opacity-90"
@@ -370,6 +382,12 @@ const Index = () => {
         open={showSearchCompanies}
         onOpenChange={setShowSearchCompanies}
         onCompaniesImported={handleCompaniesImported}
+      />
+
+      <ExportCsvDialog
+        open={showExportCsv}
+        onOpenChange={setShowExportCsv}
+        companies={filteredCompanies}
       />
     </div>
   );
