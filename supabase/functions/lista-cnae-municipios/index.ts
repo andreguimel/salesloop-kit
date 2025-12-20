@@ -5,11 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Try multiple base URLs with the endpoint
+// Try multiple base URLs based on dashboard URL pattern
 const API_URLS = [
+  'https://listacnae.com.br/app/api/todosMunicipios',
+  'https://listacnae.com.br/app/todosMunicipios',
   'https://listacnae.com.br/todosMunicipios',
-  'https://api.listacnae.com.br/todosMunicipios',
-  'https://listacnae.com.br/api/todosMunicipios',
 ];
 
 // Cache for municipalities
