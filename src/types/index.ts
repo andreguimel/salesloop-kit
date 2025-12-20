@@ -1,6 +1,7 @@
 export interface Phone {
+  id?: string;
   number: string;
-  status: 'valid' | 'uncertain' | 'invalid';
+  status: 'valid' | 'uncertain' | 'invalid' | 'pending';
   type: 'mobile' | 'landline';
 }
 
