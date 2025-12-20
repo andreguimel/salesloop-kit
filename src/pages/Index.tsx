@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Building2, Phone, Send, TrendingUp, Plus, Loader2 } from 'lucide-react';
+import { Building2, Phone, Send, TrendingUp, Plus, Loader2, Search } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { MetricCard } from '@/components/MetricCard';
 import { SearchForm } from '@/components/SearchForm';
 import { CompanyTable } from '@/components/CompanyTable';
 import { MessagePanel } from '@/components/MessagePanel';
 import { AddCompanyDialog } from '@/components/AddCompanyDialog';
+import { SearchCompaniesDialog } from '@/components/SearchCompaniesDialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -50,6 +51,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [showAddCompany, setShowAddCompany] = useState(false);
+  const [showSearchCompanies, setShowSearchCompanies] = useState(false);
   const [metrics, setMetrics] = useState({ totalCompanies: 0, validPhones: 0, messagesSent: 0, pendingMessages: 0 });
   
   const { toast } = useToast();
@@ -238,6 +240,10 @@ const Index = () => {
     setShowAddCompany(false);
   };
 
+  const handleCompaniesImported = () => {
+    loadData();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -262,7 +268,7 @@ const Index = () => {
         
         <main className="container px-4 md:px-8 py-8 space-y-8">
           {/* Hero Section */}
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
             <div className="space-y-3 animate-fade-up">
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
                 Prospecção <span className="text-gradient">Inteligente</span>
@@ -271,13 +277,23 @@ const Index = () => {
                 Encontre empresas, valide telefones e envie mensagens automatizadas.
               </p>
             </div>
-            <Button 
-              onClick={() => setShowAddCompany(true)}
-              className="gap-2 gradient-primary hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" />
-              Adicionar Empresa
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowSearchCompanies(true)}
+                variant="outline"
+                className="gap-2 border-primary/30 hover:bg-primary/10"
+              >
+                <Search className="h-4 w-4" />
+                Buscar por CNAE
+              </Button>
+              <Button 
+                onClick={() => setShowAddCompany(true)}
+                className="gap-2 gradient-primary hover:opacity-90"
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar
+              </Button>
+            </div>
           </div>
 
           {/* Metrics Dashboard */}
@@ -347,6 +363,12 @@ const Index = () => {
         open={showAddCompany} 
         onOpenChange={setShowAddCompany}
         onCompanyAdded={handleCompanyAdded}
+      />
+
+      <SearchCompaniesDialog
+        open={showSearchCompanies}
+        onOpenChange={setShowSearchCompanies}
+        onCompaniesImported={handleCompaniesImported}
       />
     </div>
   );
