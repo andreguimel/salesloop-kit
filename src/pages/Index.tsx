@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Building2, Phone, Send, TrendingUp, Plus, Loader2, Search, Download } from 'lucide-react';
+import { Building2, Phone, Send, TrendingUp, Plus, Loader2, Search, Download, MapPin } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { MetricCard } from '@/components/MetricCard';
 import { SearchForm } from '@/components/SearchForm';
@@ -8,6 +8,7 @@ import { MessagePanel } from '@/components/MessagePanel';
 import { AddCompanyDialog } from '@/components/AddCompanyDialog';
 import { SearchByCnpjDialog } from '@/components/SearchByCnpjDialog';
 import { SearchByCnaeDialog } from '@/components/SearchByCnaeDialog';
+import { SearchByCepDialog } from '@/components/SearchByCepDialog';
 import { SearchGoogleMapsDialog } from '@/components/SearchGoogleMapsDialog';
 import { ExportCsvDialog } from '@/components/ExportCsvDialog';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,7 @@ const Index = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [showSearchCompanies, setShowSearchCompanies] = useState(false);
+  const [showSearchByCep, setShowSearchByCep] = useState(false);
   const [showExportCsv, setShowExportCsv] = useState(false);
   const [metrics, setMetrics] = useState({ totalCompanies: 0, validPhones: 0, messagesSent: 0, pendingMessages: 0 });
   
@@ -285,6 +287,14 @@ const Index = () => {
               <SearchGoogleMapsDialog onCompaniesImported={handleCompaniesImported} />
               <SearchByCnaeDialog onCompaniesImported={handleCompaniesImported} />
               <Button 
+                onClick={() => setShowSearchByCep(true)}
+                variant="outline"
+                className="gap-2 border-accent/30 hover:bg-accent/10"
+              >
+                <MapPin className="h-4 w-4" />
+                Buscar por CEP
+              </Button>
+              <Button 
                 onClick={() => setShowSearchCompanies(true)}
                 variant="outline"
                 className="gap-2 border-primary/30 hover:bg-primary/10"
@@ -392,6 +402,12 @@ const Index = () => {
         open={showExportCsv}
         onOpenChange={setShowExportCsv}
         companies={filteredCompanies}
+      />
+
+      <SearchByCepDialog
+        open={showSearchByCep}
+        onOpenChange={setShowSearchByCep}
+        onCompanyImported={handleCompaniesImported}
       />
     </div>
   );
