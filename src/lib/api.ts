@@ -1,6 +1,53 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Company, MessageTemplate } from '@/types';
 
+// Search Companies via CNPJ.ws API
+export interface SearchCompanyResult {
+  cnpj: string;
+  name: string;
+  fantasyName: string;
+  cnae: string;
+  cnaeDescription: string;
+  city: string;
+  state: string;
+  phone1: string;
+  phone2: string;
+  email: string;
+  address: string;
+  number: string;
+  neighborhood: string;
+  cep: string;
+}
+
+export interface SearchCompaniesResponse {
+  companies: SearchCompanyResult[];
+  total: number;
+  page: number;
+  hasMore: boolean;
+}
+
+export async function searchCompaniesAPI(params: {
+  cnae?: string;
+  cidade?: string;
+  uf?: string;
+  page?: number;
+}): Promise<SearchCompaniesResponse> {
+  const { data, error } = await supabase.functions.invoke('search-companies', {
+    body: params,
+  });
+
+  if (error) {
+    console.error('Error searching companies:', error);
+    throw new Error(error.message || 'Erro ao buscar empresas');
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
 // Companies
 export async function fetchCompanies() {
   const { data, error } = await supabase
@@ -174,4 +221,43 @@ export async function fetchMetrics() {
   const pendingMessages = messagesResult.data?.filter(m => m.status === 'pending').length || 0;
 
   return { totalCompanies, validPhones, messagesSent, pendingMessages };
+}
+
+// Import company from API search result
+export async function importCompanyFromSearch(searchResult: SearchCompanyResult) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Create the company
+  const { data: company, error: companyError } = await supabase
+    .from('companies')
+    .insert({
+      user_id: user.id,
+      name: searchResult.fantasyName || searchResult.name,
+      cnae: searchResult.cnae,
+      cnae_description: searchResult.cnaeDescription,
+      city: searchResult.city,
+      state: searchResult.state,
+      segment: null,
+    })
+    .select()
+    .single();
+
+  if (companyError) throw companyError;
+
+  // Add phones if available
+  const phones: string[] = [];
+  if (searchResult.phone1) phones.push(searchResult.phone1);
+  if (searchResult.phone2) phones.push(searchResult.phone2);
+
+  for (const phone of phones) {
+    await supabase.from('company_phones').insert({
+      company_id: company.id,
+      phone_number: phone,
+      phone_type: phone.length > 10 ? 'mobile' : 'landline',
+      status: 'pending',
+    });
+  }
+
+  return company;
 }
