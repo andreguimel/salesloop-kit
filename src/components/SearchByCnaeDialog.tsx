@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Building2, MapPin, Loader2, Plus, Check } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, Building2, MapPin, Loader2, Plus, Check, Phone, Mail } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,25 +13,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
-import { searchCompaniesByCnae, importCompanyFromSearch, SearchCompanyResult } from '@/lib/api';
-
-const NATUREZAS_JURIDICAS = [
-  { value: '2062', label: 'Sociedade Empresária Limitada' },
-  { value: '2135', label: 'Empresário Individual (MEI)' },
-  { value: '2305', label: 'EIRELI (Natureza Empresária)' },
-  { value: '2313', label: 'EIRELI (Natureza Simples)' },
-  { value: '2143', label: 'Cooperativa' },
-  { value: '2046', label: 'Sociedade Anônima Fechada' },
-  { value: '2054', label: 'Sociedade Anônima Aberta' },
-];
+import { searchCompaniesByCnae, importCompanyFromSearch, fetchMunicipios, SearchCompanyResult } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 interface SearchByCnaeDialogProps {
   onCompaniesImported: () => void;
@@ -40,19 +38,64 @@ interface SearchByCnaeDialogProps {
 export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogProps) {
   const [open, setOpen] = useState(false);
   const [cnae, setCnae] = useState('');
-  const [municipio, setMunicipio] = useState('');
-  const [naturezaJuridica, setNaturezaJuridica] = useState('2062');
+  const [municipioId, setMunicipioId] = useState<number | null>(null);
+  const [municipioSearch, setMunicipioSearch] = useState('');
+  const [municipioPopoverOpen, setMunicipioPopoverOpen] = useState(false);
+  const [telefoneObrigatorio, setTelefoneObrigatorio] = useState(false);
+  const [emailObrigatorio, setEmailObrigatorio] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchCompanyResult[]>([]);
   const [importingCnpjs, setImportingCnpjs] = useState<Set<string>>(new Set());
   const [importedCnpjs, setImportedCnpjs] = useState<Set<string>>(new Set());
+  const [municipios, setMunicipios] = useState<{ id: number; nome: string; uf: string }[]>([]);
+  const [loadingMunicipios, setLoadingMunicipios] = useState(false);
   const { toast } = useToast();
 
+  // Load municipalities when dialog opens
+  useEffect(() => {
+    if (open && municipios.length === 0) {
+      loadMunicipios();
+    }
+  }, [open]);
+
+  const loadMunicipios = async () => {
+    setLoadingMunicipios(true);
+    try {
+      const data = await fetchMunicipios();
+      setMunicipios(data);
+    } catch (error) {
+      console.error('Error loading municipalities:', error);
+      toast({
+        title: 'Erro ao carregar municípios',
+        description: 'Não foi possível carregar a lista de municípios',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingMunicipios(false);
+    }
+  };
+
+  // Filter municipalities based on search
+  const filteredMunicipios = useMemo(() => {
+    if (!municipioSearch.trim()) return municipios.slice(0, 100);
+    const search = municipioSearch.toLowerCase();
+    return municipios
+      .filter(m => 
+        m.nome.toLowerCase().includes(search) || 
+        m.uf.toLowerCase().includes(search)
+      )
+      .slice(0, 100);
+  }, [municipios, municipioSearch]);
+
+  const selectedMunicipio = useMemo(() => {
+    return municipios.find(m => m.id === municipioId);
+  }, [municipios, municipioId]);
+
   const handleSearch = async () => {
-    if (!cnae.trim() || !municipio.trim()) {
+    if (!cnae.trim() || !municipioId) {
       toast({
         title: 'Campos obrigatórios',
-        description: 'Informe o CNAE e o código do município',
+        description: 'Informe o CNAE e selecione o município',
         variant: 'destructive',
       });
       return;
@@ -64,9 +107,10 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
     try {
       const response = await searchCompaniesByCnae({
         cnae: cnae.trim(),
-        municipio: municipio.trim(),
-        naturezaJuridica: naturezaJuridica,
-        top: 50,
+        municipio: municipioId,
+        quantidade: 50,
+        telefoneObrigatorio,
+        emailObrigatorio,
       });
 
       if (response.companies.length === 0) {
@@ -133,9 +177,12 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
   const handleClose = () => {
     setOpen(false);
     setCnae('');
-    setMunicipio('');
+    setMunicipioId(null);
+    setMunicipioSearch('');
     setResults([]);
     setImportedCnpjs(new Set());
+    setTelefoneObrigatorio(false);
+    setEmailObrigatorio(false);
   };
 
   return (
@@ -153,7 +200,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
             Buscar Empresas por CNAE
           </DialogTitle>
           <DialogDescription>
-            Busque empresas por atividade econômica (CNAE) e município usando a API Nuvem Fiscal
+            Busque empresas por atividade econômica (CNAE) e município usando a API Lista CNAE
           </DialogDescription>
         </DialogHeader>
 
@@ -174,35 +221,94 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="municipio">Código do Município (IBGE)</Label>
-              <Input
-                id="municipio"
-                placeholder="Ex: 4106902 (Curitiba)"
-                value={municipio}
-                onChange={(e) => setMunicipio(e.target.value)}
-                disabled={isSearching}
-              />
+              <Label>Município</Label>
+              <Popover open={municipioPopoverOpen} onOpenChange={setMunicipioPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={municipioPopoverOpen}
+                    className="w-full justify-between font-normal"
+                    disabled={isSearching || loadingMunicipios}
+                  >
+                    {loadingMunicipios ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Carregando...
+                      </span>
+                    ) : selectedMunicipio ? (
+                      `${selectedMunicipio.nome} - ${selectedMunicipio.uf}`
+                    ) : (
+                      "Selecione um município..."
+                    )}
+                    <MapPin className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Digite para buscar município..."
+                      value={municipioSearch}
+                      onValueChange={setMunicipioSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>Nenhum município encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {filteredMunicipios.map((mun) => (
+                          <CommandItem
+                            key={mun.id}
+                            value={mun.id.toString()}
+                            onSelect={() => {
+                              setMunicipioId(mun.id);
+                              setMunicipioPopoverOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                municipioId === mun.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {mun.nome} - {mun.uf}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <p className="text-xs text-muted-foreground">
-                Código IBGE. Ex: 4106902
+                Digite para buscar por nome ou UF
               </p>
             </div>
           </div>
 
-          {/* Natureza Jurídica */}
-          <div className="space-y-2">
-            <Label htmlFor="natureza">Natureza Jurídica</Label>
-            <Select value={naturezaJuridica} onValueChange={setNaturezaJuridica} disabled={isSearching}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a natureza jurídica" />
-              </SelectTrigger>
-              <SelectContent>
-                {NATUREZAS_JURIDICAS.map((nj) => (
-                  <SelectItem key={nj.value} value={nj.value}>
-                    {nj.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="telefone"
+                checked={telefoneObrigatorio}
+                onCheckedChange={(checked) => setTelefoneObrigatorio(checked as boolean)}
+                disabled={isSearching}
+              />
+              <Label htmlFor="telefone" className="text-sm flex items-center gap-1 cursor-pointer">
+                <Phone className="h-3 w-3" />
+                Somente com telefone
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="email"
+                checked={emailObrigatorio}
+                onCheckedChange={(checked) => setEmailObrigatorio(checked as boolean)}
+                disabled={isSearching}
+              />
+              <Label htmlFor="email" className="text-sm flex items-center gap-1 cursor-pointer">
+                <Mail className="h-3 w-3" />
+                Somente com email
+              </Label>
+            </div>
           </div>
 
           <div className="flex gap-2">

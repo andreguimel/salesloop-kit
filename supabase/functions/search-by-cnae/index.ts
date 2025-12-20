@@ -7,59 +7,11 @@ const corsHeaders = {
 
 interface SearchParams {
   cnae: string;
-  municipio: string;
-  naturezaJuridica?: string;
-  top?: number;
-  skip?: number;
-}
-
-let cachedToken: { token: string; expiresAt: number } | null = null;
-
-async function getAccessToken(): Promise<string> {
-  // Check if we have a valid cached token (with 5 min buffer)
-  if (cachedToken && Date.now() < cachedToken.expiresAt - 300000) {
-    console.log('Using cached access token');
-    return cachedToken.token;
-  }
-
-  const clientId = Deno.env.get('NUVEM_FISCAL_CLIENT_ID');
-  const clientSecret = Deno.env.get('NUVEM_FISCAL_CLIENT_SECRET');
-
-  if (!clientId || !clientSecret) {
-    throw new Error('Credenciais da Nuvem Fiscal não configuradas');
-  }
-
-  console.log('Requesting new access token from Nuvem Fiscal');
-
-  const response = await fetch('https://auth.nuvemfiscal.com.br/oauth/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: clientId,
-      client_secret: clientSecret,
-      scope: 'cnpj',
-    }).toString(),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Token error:', response.status, errorText);
-    throw new Error('Falha ao obter token de acesso da Nuvem Fiscal');
-  }
-
-  const data = await response.json();
-  
-  // Cache the token
-  cachedToken = {
-    token: data.access_token,
-    expiresAt: Date.now() + (data.expires_in * 1000),
-  };
-
-  console.log('Access token obtained successfully');
-  return data.access_token;
+  municipio: number;
+  quantidade?: number;
+  inicio?: number;
+  telefoneObrigatorio?: boolean;
+  emailObrigatorio?: boolean;
 }
 
 serve(async (req) => {
@@ -69,12 +21,22 @@ serve(async (req) => {
   }
 
   try {
-    const { cnae, municipio, naturezaJuridica, top = 50, skip = 0 }: SearchParams = await req.json();
+    const { cnae, municipio, quantidade = 50, inicio = 0, telefoneObrigatorio = false, emailObrigatorio = false }: SearchParams = await req.json();
 
-    if (!cnae || !municipio) {
+    if (!cnae || municipio === undefined) {
       return new Response(
         JSON.stringify({ error: 'CNAE e município são obrigatórios' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = Deno.env.get('LISTA_CNAE_TOKEN');
+
+    if (!token) {
+      console.error('LISTA_CNAE_TOKEN not configured');
+      return new Response(
+        JSON.stringify({ error: 'Token da Lista CNAE não configurado' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -88,92 +50,82 @@ serve(async (req) => {
       );
     }
 
-    // Clean município code
-    const cleanMunicipio = municipio.replace(/[^\d]/g, '');
+    console.log('Searching Lista CNAE for CNAE:', cleanCnae, 'Municipality ID:', municipio);
 
-    console.log('Searching for CNAE:', cleanCnae, 'Municipality:', cleanMunicipio);
+    // Build request body for Lista CNAE API
+    const requestBody: Record<string, any> = {
+      inicio: inicio,
+      quantidade: quantidade,
+      cnaes: [parseInt(cleanCnae)],
+      municipios: [municipio],
+    };
 
-    // Get access token
-    const accessToken = await getAccessToken();
+    if (telefoneObrigatorio) {
+      requestBody.telefone_obrigatorio = true;
+    }
 
-    // Build query parameters
-    // natureza_juridica is required by Nuvem Fiscal API
-    // Default to common types if not specified:
-    // 2062 - Sociedade Empresária Limitada
-    // 2135 - Empresário Individual (MEI)
-    // 2305 - EIRELI Empresária
-    const cleanNatureza = naturezaJuridica 
-      ? naturezaJuridica.replace(/[^\d]/g, '') 
-      : '2062'; // Default to Sociedade Limitada
+    if (emailObrigatorio) {
+      requestBody.email_obrigatorio = true;
+    }
 
-    const params = new URLSearchParams({
-      '$top': top.toString(),
-      '$skip': skip.toString(),
-      'cnae_principal': cleanCnae,
-      'municipio': cleanMunicipio,
-      'natureza_juridica': cleanNatureza,
-    });
+    console.log('Request body:', JSON.stringify(requestBody));
 
-    const apiUrl = `https://api.nuvemfiscal.com.br/cnpj?${params.toString()}`;
-    
-    console.log('Calling Nuvem Fiscal API:', apiUrl);
-
-    const response = await fetch(apiUrl, {
+    const response = await fetch('https://api.listacnae.com.br/buscar', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Nuvem Fiscal API error:', response.status, errorText);
+      console.error('Lista CNAE API error:', response.status, errorText);
       
       if (response.status === 401) {
-        // Token expired, clear cache and retry
-        cachedToken = null;
         return new Response(
-          JSON.stringify({ error: 'Token expirado. Tente novamente.' }),
+          JSON.stringify({ error: 'Token inválido ou expirado' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      if (response.status === 402) {
+      if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'Créditos insuficientes na Nuvem Fiscal' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Limite de requisições excedido. Aguarde um momento.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       return new Response(
-        JSON.stringify({ error: 'Erro ao buscar empresas na API' }),
+        JSON.stringify({ error: 'Erro ao buscar empresas na API Lista CNAE' }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const data = await response.json();
     
-    console.log('Nuvem Fiscal response count:', data.length || 0);
+    console.log('Lista CNAE response:', JSON.stringify(data).substring(0, 500));
 
     // Transform the response to our format
-    const companies = (data || []).map((item: any) => ({
+    // Lista CNAE returns an array of companies
+    const companies = (data.empresas || data || []).map((item: any) => ({
       cnpj: item.cnpj || '',
       name: item.razao_social || item.nome_fantasia || 'Empresa sem nome',
       fantasyName: item.nome_fantasia || '',
       cnae: cleanCnae,
-      cnaeDescription: item.cnae_fiscal_principal?.descricao || '',
-      city: item.endereco?.municipio?.nome || '',
-      state: item.endereco?.uf || '',
-      phone1: item.telefone1 ? `${item.ddd1 || ''}${item.telefone1}` : '',
-      phone2: item.telefone2 ? `${item.ddd2 || ''}${item.telefone2}` : '',
+      cnaeDescription: item.cnae_descricao || '',
+      city: item.municipio || '',
+      state: item.uf || '',
+      phone1: item.telefone_primario || item.telefone || '',
+      phone2: item.telefone_secundario || '',
       email: item.email || '',
-      address: item.endereco?.logradouro || '',
-      number: item.endereco?.numero || '',
-      neighborhood: item.endereco?.bairro || '',
-      cep: item.endereco?.cep || '',
-      naturezaJuridica: item.natureza_juridica?.descricao || '',
-      situacao: item.situacao_cadastral || '',
+      address: item.logradouro || '',
+      number: item.numero || '',
+      neighborhood: item.bairro || '',
+      cep: item.cep || '',
+      naturezaJuridica: item.natureza_juridica || '',
+      situacao: item.situacao || 'ATIVA',
     }));
 
     return new Response(
