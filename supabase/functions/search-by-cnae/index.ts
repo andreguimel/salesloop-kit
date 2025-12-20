@@ -54,13 +54,16 @@ serve(async (req) => {
 
     console.log('Searching Lista CNAE for CNAE:', cleanCnae, 'Municipality ID:', municipio);
 
-    // Build query parameters for Lista CNAE API
+    // Build query parameters for Lista CNAE API according to documentation
+    // cnaes and municipios need to be JSON arrays like [111301] and [1]
+    const cnaesArray = JSON.stringify([parseInt(cleanCnae)]);
+    const municipiosArray = JSON.stringify([municipio]);
+    
     const params = new URLSearchParams();
     params.append('inicio', inicio.toString());
     params.append('quantidade', quantidade.toString());
-    params.append('cnaes', cleanCnae);
-    params.append('municipios', municipio.toString());
-    params.append('token', token);
+    params.append('cnaes', cnaesArray);
+    params.append('municipios', municipiosArray);
     
     if (telefoneObrigatorio) {
       params.append('telefone_obrigatorio', 'true');
@@ -71,14 +74,17 @@ serve(async (req) => {
     }
 
     // Lista CNAE API - GET /buscar with query parameters
+    // Token goes in Authorization header as Bearer token
     const apiUrl = `${BASE_URL}/buscar?${params.toString()}`;
     
-    console.log('Calling API:', apiUrl.replace(token, '***TOKEN***'));
+    console.log('Calling API:', apiUrl);
+    console.log('Using Authorization: Bearer token');
 
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
       },
     });
 
