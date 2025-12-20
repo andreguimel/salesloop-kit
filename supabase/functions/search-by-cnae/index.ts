@@ -54,37 +54,32 @@ serve(async (req) => {
 
     console.log('Searching Lista CNAE for CNAE:', cleanCnae, 'Municipality ID:', municipio);
 
-    // Build request body for Lista CNAE API
-    const requestBody: Record<string, any> = {
-      inicio: inicio,
-      quantidade: quantidade,
-      cnaes: [parseInt(cleanCnae)],
-      municipios: [municipio], // Using Lista CNAE municipality ID directly
-    };
-
+    // Build query parameters for Lista CNAE API
+    const params = new URLSearchParams();
+    params.append('inicio', inicio.toString());
+    params.append('quantidade', quantidade.toString());
+    params.append('cnaes', cleanCnae);
+    params.append('municipios', municipio.toString());
+    params.append('token', token);
+    
     if (telefoneObrigatorio) {
-      requestBody.telefone_obrigatorio = true;
+      params.append('telefone_obrigatorio', 'true');
     }
 
     if (emailObrigatorio) {
-      requestBody.email_obrigatorio = true;
+      params.append('email_obrigatorio', 'true');
     }
 
-    console.log('Request body:', JSON.stringify(requestBody));
-
-    // Lista CNAE API - POST /buscar with JSON body
-    const apiUrl = `${BASE_URL}/buscar`;
+    // Lista CNAE API - GET /buscar with query parameters
+    const apiUrl = `${BASE_URL}/buscar?${params.toString()}`;
     
-    console.log('Calling API:', apiUrl);
+    console.log('Calling API:', apiUrl.replace(token, '***TOKEN***'));
 
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify(requestBody),
     });
 
     console.log('Response status:', response.status);
