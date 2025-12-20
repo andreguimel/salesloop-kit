@@ -72,13 +72,13 @@ serve(async (req) => {
 
     console.log('Request body:', JSON.stringify(requestBody));
 
-    // Lista CNAE API - GET /buscar with JSON body
+    // Lista CNAE API - POST /buscar with JSON body
     const apiUrl = `${BASE_URL}/buscar`;
     
     console.log('Calling API:', apiUrl);
 
     const response = await fetch(apiUrl, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
