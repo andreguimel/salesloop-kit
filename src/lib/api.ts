@@ -50,7 +50,7 @@ export async function searchCompanyByCnpj(cnpj: string): Promise<SearchCompanyBy
 // Search Companies by CNAE via Lista CNAE API
 export interface SearchByCnaeParams {
   cnae: string;
-  municipio: string; // Código IBGE do município
+  municipio: number; // ID do município na Lista CNAE
   quantidade?: number;
   inicio?: number;
   telefoneObrigatorio?: boolean;
@@ -80,36 +80,40 @@ export async function searchCompaniesByCnae(params: SearchByCnaeParams): Promise
   return data;
 }
 
-// Fetch municipalities from IBGE API (free and public)
+// Fetch municipalities from Lista CNAE API
 export interface Municipio {
   id: number;
   nome: string;
   uf: string;
 }
 
+let cachedMunicipios: Municipio[] | null = null;
+
 export async function fetchMunicipios(): Promise<Municipio[]> {
-  try {
-    const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome');
-    if (!response.ok) {
-      throw new Error('Erro ao buscar municípios');
-    }
-    const data = await response.json();
-    return data.map((m: any) => ({
-      id: m.id,
-      nome: m.nome,
-      uf: m.microrregiao?.mesorregiao?.UF?.sigla || '',
-    }));
-  } catch (error) {
-    console.error('Error fetching municipalities:', error);
-    throw new Error('Erro ao buscar municípios do IBGE');
+  // Return cached data if available
+  if (cachedMunicipios) {
+    return cachedMunicipios;
   }
+
+  const { data, error } = await supabase.functions.invoke('lista-cnae-municipios');
+
+  if (error) {
+    console.error('Error fetching municipalities:', error);
+    throw new Error(error.message || 'Erro ao buscar municípios');
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  cachedMunicipios = data.municipios || [];
+  return cachedMunicipios;
 }
 
-// Fetch CNAEs from IBGE API (free and public)
+// Fetch CNAEs from Lista CNAE API
 export interface Cnae {
   id: string;
   descricao: string;
-  classe: string;
 }
 
 let cachedCnaes: Cnae[] | null = null;
@@ -120,22 +124,19 @@ export async function fetchCnaes(): Promise<Cnae[]> {
     return cachedCnaes;
   }
 
-  try {
-    const response = await fetch('https://servicodados.ibge.gov.br/api/v2/cnae/subclasses');
-    if (!response.ok) {
-      throw new Error('Erro ao buscar CNAEs');
-    }
-    const data = await response.json();
-    cachedCnaes = data.map((c: any) => ({
-      id: c.id,
-      descricao: c.descricao,
-      classe: c.classe?.descricao || '',
-    }));
-    return cachedCnaes;
-  } catch (error) {
+  const { data, error } = await supabase.functions.invoke('lista-cnae-cnaes');
+
+  if (error) {
     console.error('Error fetching CNAEs:', error);
-    throw new Error('Erro ao buscar CNAEs do IBGE');
+    throw new Error(error.message || 'Erro ao buscar CNAEs');
   }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  cachedCnaes = data.cnaes || [];
+  return cachedCnaes;
 }
 
 // Companies

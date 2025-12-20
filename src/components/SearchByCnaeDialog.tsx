@@ -115,8 +115,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
     return cnaes
       .filter(c => 
         c.id.includes(cnaeSearch) ||
-        c.descricao.toLowerCase().includes(search) ||
-        c.classe.toLowerCase().includes(search)
+        c.descricao.toLowerCase().includes(search)
       )
       .slice(0, 100);
   }, [cnaes, cnaeSearch]);
@@ -145,7 +144,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
     try {
       const response = await searchCompaniesByCnae({
         cnae: cnaeId,
-        municipio: municipioId.toString(),
+        municipio: municipioId,
         quantidade: 50,
         telefoneObrigatorio,
         emailObrigatorio,
