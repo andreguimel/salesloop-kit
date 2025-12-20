@@ -105,6 +105,39 @@ export async function fetchMunicipios(): Promise<Municipio[]> {
   }
 }
 
+// Fetch CNAEs from IBGE API (free and public)
+export interface Cnae {
+  id: string;
+  descricao: string;
+  classe: string;
+}
+
+let cachedCnaes: Cnae[] | null = null;
+
+export async function fetchCnaes(): Promise<Cnae[]> {
+  // Return cached data if available
+  if (cachedCnaes) {
+    return cachedCnaes;
+  }
+
+  try {
+    const response = await fetch('https://servicodados.ibge.gov.br/api/v2/cnae/subclasses');
+    if (!response.ok) {
+      throw new Error('Erro ao buscar CNAEs');
+    }
+    const data = await response.json();
+    cachedCnaes = data.map((c: any) => ({
+      id: c.id,
+      descricao: c.descricao,
+      classe: c.classe?.descricao || '',
+    }));
+    return cachedCnaes;
+  } catch (error) {
+    console.error('Error fetching CNAEs:', error);
+    throw new Error('Erro ao buscar CNAEs do IBGE');
+  }
+}
+
 // Companies
 export async function fetchCompanies() {
   const { data, error } = await supabase
