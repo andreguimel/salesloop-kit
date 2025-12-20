@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const BASE_URL = 'https://listacnae.com.br';
+const BASE_URL = 'https://listacnae.com.br/api';
 
 // Cache for municipalities
 let cachedMunicipios: { id: number; nome: string; uf: string }[] | null = null;

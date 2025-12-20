@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const BASE_URL = 'https://listacnae.com.br';
+const BASE_URL = 'https://listacnae.com.br/api';
 
 // Cache for CNAEs
 let cachedCnaes: { id: string; descricao: string }[] | null = null;
