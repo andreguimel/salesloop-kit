@@ -1,18 +1,24 @@
-import { MapPin, Building2, Smartphone } from 'lucide-react';
+import { useState } from 'react';
+import { MapPin, Building2, Smartphone, RefreshCw, CheckCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { PhoneStatusBadge } from './PhoneStatusBadge';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { Company } from '@/types';
 import { cn } from '@/lib/utils';
+import { validatePhones } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface CompanyTableProps {
   companies: Company[];
   onSelectPhones: (companyId: string, phones: string[]) => void;
   selectedPhones: Record<string, string[]>;
+  onPhonesValidated?: () => void;
 }
 
-export function CompanyTable({ companies, onSelectPhones, selectedPhones }: CompanyTableProps) {
+export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhonesValidated }: CompanyTableProps) {
+  const [validatingCompanyId, setValidatingCompanyId] = useState<string | null>(null);
+
   const handlePhoneToggle = (companyId: string, phoneNumber: string, isValid: boolean) => {
     if (!isValid) return;
     
@@ -29,6 +35,36 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones }: Comp
       .filter((p) => p.status === 'valid')
       .map((p) => p.number);
     onSelectPhones(company.id, validPhones);
+  };
+
+  const handleValidatePhones = async (company: Company) => {
+    const pendingPhones = company.phones.filter(p => p.status === 'pending' && p.id);
+    
+    if (pendingPhones.length === 0) {
+      toast.info('Não há telefones pendentes para validar');
+      return;
+    }
+
+    setValidatingCompanyId(company.id);
+    
+    try {
+      const phoneIds = pendingPhones.map(p => p.id!);
+      const result = await validatePhones(phoneIds);
+      
+      toast.success(
+        `Validação concluída: ${result.summary.valid} válidos, ${result.summary.invalid} inválidos`,
+        { description: `${result.summary.uncertain} incertos` }
+      );
+      
+      onPhonesValidated?.();
+    } catch (error) {
+      console.error('Error validating phones:', error);
+      toast.error('Erro ao validar telefones', {
+        description: error instanceof Error ? error.message : 'Tente novamente'
+      });
+    } finally {
+      setValidatingCompanyId(null);
+    }
   };
 
   if (companies.length === 0) {
@@ -128,14 +164,37 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones }: Comp
                   <MessageStatusBadge status={company.messageStatus} />
                 </td>
                 <td className="px-5 py-4 text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSelectAllValid(company)}
-                    className="text-xs font-medium text-primary hover:text-primary hover:bg-primary/10"
-                  >
-                    Selecionar válidos
-                  </Button>
+                  <div className="flex flex-col gap-1.5 items-end">
+                    {company.phones.some(p => p.status === 'pending') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleValidatePhones(company)}
+                        disabled={validatingCompanyId === company.id}
+                        className="text-xs font-medium gap-1.5"
+                      >
+                        {validatingCompanyId === company.id ? (
+                          <>
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                            Validando...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-3 w-3" />
+                            Validar WhatsApp
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSelectAllValid(company)}
+                      className="text-xs font-medium text-primary hover:text-primary hover:bg-primary/10"
+                    >
+                      Selecionar válidos
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}

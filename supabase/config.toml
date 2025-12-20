@@ -2,3 +2,6 @@ project_id = "znuwvgspjvsifnwizynd"
 
 [functions.search-companies]
 verify_jwt = true
+
+[functions.validate-phones]
+verify_jwt = true

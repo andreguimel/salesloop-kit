@@ -337,6 +337,7 @@ const Index = () => {
               companies={filteredCompanies}
               onSelectPhones={handleSelectPhones}
               selectedPhones={selectedPhones}
+              onPhonesValidated={loadData}
             />
             <MessagePanel
               templates={templates}

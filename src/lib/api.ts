@@ -109,6 +109,41 @@ export async function updatePhoneStatus(phoneId: string, status: string) {
   if (error) throw error;
 }
 
+// Validate phones via Evolution API (WhatsApp check)
+export interface PhoneValidationResult {
+  id: string;
+  status: string;
+  whatsappName?: string;
+}
+
+export interface ValidatePhonesResponse {
+  success: boolean;
+  results: PhoneValidationResult[];
+  summary: {
+    total: number;
+    valid: number;
+    invalid: number;
+    uncertain: number;
+  };
+}
+
+export async function validatePhones(phoneIds: string[]): Promise<ValidatePhonesResponse> {
+  const { data, error } = await supabase.functions.invoke('validate-phones', {
+    body: { phoneIds },
+  });
+
+  if (error) {
+    console.error('Error validating phones:', error);
+    throw new Error(error.message || 'Erro ao validar telefones');
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
 // Message Templates
 export async function fetchTemplates() {
   const { data, error } = await supabase
