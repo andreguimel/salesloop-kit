@@ -8,6 +8,3 @@ verify_jwt = false
 
 [functions.search-by-cnae]
 verify_jwt = false
-
-[functions.lista-cnae-municipios]
-verify_jwt = false

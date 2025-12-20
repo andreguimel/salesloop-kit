@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface SearchParams {
   cnae: string;
-  municipio: number;
+  municipio: string; // Now accepts IBGE code as string
   quantidade?: number;
   inicio?: number;
   telefoneObrigatorio?: boolean;
@@ -23,7 +23,7 @@ serve(async (req) => {
   try {
     const { cnae, municipio, quantidade = 50, inicio = 0, telefoneObrigatorio = false, emailObrigatorio = false }: SearchParams = await req.json();
 
-    if (!cnae || municipio === undefined) {
+    if (!cnae || !municipio) {
       return new Response(
         JSON.stringify({ error: 'CNAE e município são obrigatórios' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -50,15 +50,24 @@ serve(async (req) => {
       );
     }
 
-    console.log('Searching Lista CNAE for CNAE:', cleanCnae, 'Municipality ID:', municipio);
+    // Clean municipio - remove formatting (keep only digits)
+    const cleanMunicipio = municipio.replace(/[^\d]/g, '');
+
+    console.log('Searching Lista CNAE for CNAE:', cleanCnae, 'Municipality IBGE Code:', cleanMunicipio);
 
     // Build request body for Lista CNAE API
+    // The API expects the municipio ID from Lista CNAE, not IBGE code
+    // We'll pass it directly and let the API handle it
     const requestBody: Record<string, any> = {
       inicio: inicio,
       quantidade: quantidade,
       cnaes: [parseInt(cleanCnae)],
-      municipios: [municipio],
     };
+
+    // Try with IBGE code directly - Lista CNAE may accept it
+    if (cleanMunicipio) {
+      requestBody.municipios = [parseInt(cleanMunicipio)];
+    }
 
     if (telefoneObrigatorio) {
       requestBody.telefone_obrigatorio = true;
@@ -70,14 +79,18 @@ serve(async (req) => {
 
     console.log('Request body:', JSON.stringify(requestBody));
 
-    const response = await fetch('https://api.listacnae.com.br/buscar', {
-      method: 'GET',
+    // Lista CNAE API uses GET with query params sent as body
+    const response = await fetch('https://listacnae.com.br/api/buscar', {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify(requestBody),
     });
+
+    console.log('Response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -98,7 +111,7 @@ serve(async (req) => {
       }
       
       return new Response(
-        JSON.stringify({ error: 'Erro ao buscar empresas na API Lista CNAE' }),
+        JSON.stringify({ error: 'Erro ao buscar empresas na API Lista CNAE: ' + errorText }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -109,24 +122,27 @@ serve(async (req) => {
 
     // Transform the response to our format
     // Lista CNAE returns an array of companies
-    const companies = (data.empresas || data || []).map((item: any) => ({
+    const companiesArray = data.empresas || data.data || data || [];
+    const companies = companiesArray.map((item: any) => ({
       cnpj: item.cnpj || '',
       name: item.razao_social || item.nome_fantasia || 'Empresa sem nome',
       fantasyName: item.nome_fantasia || '',
       cnae: cleanCnae,
-      cnaeDescription: item.cnae_descricao || '',
-      city: item.municipio || '',
-      state: item.uf || '',
-      phone1: item.telefone_primario || item.telefone || '',
-      phone2: item.telefone_secundario || '',
+      cnaeDescription: item.cnae_descricao || item.atividade_principal || '',
+      city: item.municipio || item.cidade || '',
+      state: item.uf || item.estado || '',
+      phone1: item.telefone_primario || item.telefone1 || item.telefone || '',
+      phone2: item.telefone_secundario || item.telefone2 || '',
       email: item.email || '',
-      address: item.logradouro || '',
+      address: item.logradouro || item.endereco || '',
       number: item.numero || '',
       neighborhood: item.bairro || '',
       cep: item.cep || '',
       naturezaJuridica: item.natureza_juridica || '',
       situacao: item.situacao || 'ATIVA',
     }));
+
+    console.log('Transformed', companies.length, 'companies');
 
     return new Response(
       JSON.stringify({

@@ -107,7 +107,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
     try {
       const response = await searchCompaniesByCnae({
         cnae: cnae.trim(),
-        municipio: municipioId,
+        municipio: municipioId.toString(),
         quantidade: 50,
         telefoneObrigatorio,
         emailObrigatorio,

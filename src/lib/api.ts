@@ -50,7 +50,7 @@ export async function searchCompanyByCnpj(cnpj: string): Promise<SearchCompanyBy
 // Search Companies by CNAE via Lista CNAE API
 export interface SearchByCnaeParams {
   cnae: string;
-  municipio: number; // ID do município na Lista CNAE
+  municipio: string; // Código IBGE do município
   quantidade?: number;
   inicio?: number;
   telefoneObrigatorio?: boolean;
@@ -80,20 +80,29 @@ export async function searchCompaniesByCnae(params: SearchByCnaeParams): Promise
   return data;
 }
 
-// Get all municipalities from Lista CNAE API
-export async function fetchMunicipios(): Promise<{ id: number; nome: string; uf: string }[]> {
-  const { data, error } = await supabase.functions.invoke('lista-cnae-municipios');
+// Fetch municipalities from IBGE API (free and public)
+export interface Municipio {
+  id: number;
+  nome: string;
+  uf: string;
+}
 
-  if (error) {
+export async function fetchMunicipios(): Promise<Municipio[]> {
+  try {
+    const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome');
+    if (!response.ok) {
+      throw new Error('Erro ao buscar municípios');
+    }
+    const data = await response.json();
+    return data.map((m: any) => ({
+      id: m.id,
+      nome: m.nome,
+      uf: m.microrregiao?.mesorregiao?.UF?.sigla || '',
+    }));
+  } catch (error) {
     console.error('Error fetching municipalities:', error);
-    throw new Error(error.message || 'Erro ao buscar municípios');
+    throw new Error('Erro ao buscar municípios do IBGE');
   }
-
-  if (data.error) {
-    throw new Error(data.error);
-  }
-
-  return data.municipios || [];
 }
 
 // Companies
