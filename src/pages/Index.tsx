@@ -10,6 +10,7 @@ import { SearchByCnpjDialog } from '@/components/SearchByCnpjDialog';
 import { SearchByCnaeDialog } from '@/components/SearchByCnaeDialog';
 import { SearchByCepDialog } from '@/components/SearchByCepDialog';
 import { SearchGoogleMapsDialog } from '@/components/SearchGoogleMapsDialog';
+import { SearchApiDialog } from '@/components/SearchApiDialog';
 import { ExportCsvDialog } from '@/components/ExportCsvDialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -284,9 +285,10 @@ const Index = () => {
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <SearchApiDialog onCompaniesImported={handleCompaniesImported} />
               <SearchGoogleMapsDialog onCompaniesImported={handleCompaniesImported} />
               <SearchByCnaeDialog onCompaniesImported={handleCompaniesImported} />
-              <Button 
+              <Button
                 onClick={() => setShowSearchByCep(true)}
                 variant="outline"
                 className="gap-2 border-accent/30 hover:bg-accent/10"
