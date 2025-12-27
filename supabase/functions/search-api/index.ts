@@ -46,7 +46,8 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('API Response:', JSON.stringify(data).substring(0, 500));
+    const resultCount = Array.isArray(data) ? data.length : 'object';
+    console.log('API returned:', resultCount, 'results');
 
     return new Response(
       JSON.stringify(data),
