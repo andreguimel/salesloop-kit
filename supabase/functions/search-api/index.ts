@@ -16,19 +16,18 @@ serve(async (req) => {
       throw new Error('API key not configured');
     }
 
-    const { query, page = 1, limit = 50 } = await req.json();
+    const { cnae, page = 1, limit = 50 } = await req.json();
 
-    if (!query || query.trim().length < 2) {
+    if (!cnae || cnae.trim().length < 2) {
       return new Response(
-        JSON.stringify({ error: 'Query must be at least 2 characters' }),
+        JSON.stringify({ error: 'CNAE must be at least 2 characters' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const baseUrl = 'https://consulta.thelostworld.space/api/v1';
+    const baseUrl = 'https://consulta.thelostworld.space';
     
-    // Try different endpoint patterns
-    const searchUrl = `${baseUrl}/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`;
+    const searchUrl = `${baseUrl}/empresas?cnae=${encodeURIComponent(cnae)}&page=${page}&limit=${limit}`;
 
     console.log('Searching API:', searchUrl);
 

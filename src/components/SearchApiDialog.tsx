@@ -30,7 +30,7 @@ interface SearchApiDialogProps {
 
 export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [cnae, setCnae] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [isSearching, setIsSearching] = useState(false);
@@ -38,9 +38,9 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   const { toast } = useToast();
 
   const handleSearch = async () => {
-    if (!query.trim() || query.length < 2) {
+    if (!cnae.trim() || cnae.length < 2) {
       toast({
-        title: 'Digite ao menos 2 caracteres',
+        title: 'Digite ao menos 2 caracteres do CNAE',
         variant: 'destructive',
       });
       return;
@@ -52,7 +52,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
 
     try {
       const { data, error } = await supabase.functions.invoke('search-api', {
-        body: { query, page: 1, limit: 50 },
+        body: { cnae, page: 1, limit: 50 },
       });
 
       if (error) throw error;
@@ -170,7 +170,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
       });
 
       setOpen(false);
-      setQuery('');
+      setCnae('');
       setResults([]);
       setSelectedResults(new Set());
       onCompaniesImported();
@@ -198,19 +198,19 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Search className="h-5 w-5 text-primary" />
-            Busca Geral de Empresas
+            Busca por CNAE
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
           {/* Search Input */}
           <div className="space-y-2">
-            <Label>Termo de busca</Label>
+            <Label>Código CNAE</Label>
             <div className="flex gap-2">
               <Input
-                placeholder="Nome, CNPJ, segmento..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ex: 4711302, 5611201..."
+                value={cnae}
+                onChange={(e) => setCnae(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 className="flex-1"
               />
@@ -324,7 +324,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
               <div className="space-y-2">
                 <Search className="h-12 w-12 mx-auto text-muted-foreground/50" />
                 <p className="text-muted-foreground">
-                  Digite um termo para buscar empresas
+                  Digite um código CNAE para buscar empresas
                 </p>
               </div>
             </div>
