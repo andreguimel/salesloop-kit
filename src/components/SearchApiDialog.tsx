@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -200,6 +200,9 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
             <Search className="h-5 w-5 text-primary" />
             Busca por CNAE
           </DialogTitle>
+          <DialogDescription>
+            Busque empresas por código CNAE e importe para sua lista
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
