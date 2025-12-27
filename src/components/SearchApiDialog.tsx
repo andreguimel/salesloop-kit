@@ -52,7 +52,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
 
     try {
       const { data, error } = await supabase.functions.invoke('search-api', {
-        body: { cnae, page: 1, limit: 50 },
+        body: { cnae, page: 1, limit: 20 },
       });
 
       if (error) throw error;
