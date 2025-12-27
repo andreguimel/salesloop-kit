@@ -46,11 +46,13 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const resultCount = Array.isArray(data) ? data.length : 'object';
-    console.log('API returned:', resultCount, 'results');
+    
+    // API doesn't respect limit param, so we slice manually
+    const companies = Array.isArray(data) ? data.slice(0, limit) : data;
+    console.log('API returned:', Array.isArray(data) ? data.length : 'object', 'total, returning:', limit);
 
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(companies),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
