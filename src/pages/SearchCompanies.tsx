@@ -17,10 +17,13 @@ import { Company, SearchFilters } from '@/types';
 interface DbCompany {
   id: string;
   name: string;
+  cnpj: string | null;
   cnae: string;
   cnae_description: string | null;
   city: string;
   state: string;
+  address: string | null;
+  cep: string | null;
   segment: string | null;
   company_phones: Array<{
     id: string;
@@ -56,10 +59,13 @@ const SearchCompanies = () => {
       const mappedCompanies: Company[] = (companiesData as DbCompany[]).map((c) => ({
         id: c.id,
         name: c.name,
+        cnpj: c.cnpj || undefined,
         cnae: c.cnae,
         cnaeDescription: c.cnae_description || '',
         city: c.city,
         state: c.state,
+        address: c.address || undefined,
+        cep: c.cep || undefined,
         segment: c.segment || '',
         phones: c.company_phones.map((p) => ({
           id: p.id,

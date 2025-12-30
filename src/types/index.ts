@@ -8,10 +8,13 @@ export interface Phone {
 export interface Company {
   id: string;
   name: string;
+  cnpj?: string;
   cnae: string;
   cnaeDescription: string;
   city: string;
   state: string;
+  address?: string;
+  cep?: string;
   segment: string;
   phones: Phone[];
   messageStatus?: 'sent' | 'not_delivered' | 'pending' | 'none';

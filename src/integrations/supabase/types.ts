@@ -16,9 +16,12 @@ export type Database = {
     Tables: {
       companies: {
         Row: {
+          address: string | null
+          cep: string | null
           city: string
           cnae: string
           cnae_description: string | null
+          cnpj: string | null
           created_at: string
           id: string
           name: string
@@ -28,9 +31,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          address?: string | null
+          cep?: string | null
           city: string
           cnae: string
           cnae_description?: string | null
+          cnpj?: string | null
           created_at?: string
           id?: string
           name: string
@@ -40,9 +46,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          address?: string | null
+          cep?: string | null
           city?: string
           cnae?: string
           cnae_description?: string | null
+          cnpj?: string | null
           created_at?: string
           id?: string
           name?: string
