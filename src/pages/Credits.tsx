@@ -232,11 +232,11 @@ export default function Credits() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 space-y-8">
+    <div className="container mx-auto py-6 md:py-8 px-4 space-y-6 md:space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Créditos</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Créditos</h1>
           <p className="text-muted-foreground">
             Gerencie seus créditos e compre mais para continuar prospectando
           </p>

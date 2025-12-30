@@ -336,7 +336,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
           Buscar Empresas
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] md:max-h-[85vh] flex flex-col p-4 md:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
@@ -373,7 +373,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[500px] p-0" align="start">
+                <PopoverContent className="w-[85vw] md:w-[500px] p-0" align="start">
                   <Command shouldFilter={false}>
                     <CommandInput 
                       placeholder="Buscar por código ou descrição..." 

@@ -265,7 +265,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
           Buscar por CNAE
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[80vh]">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] md:max-h-[80vh] p-4 md:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
@@ -307,7 +307,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
                     <Briefcase className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[450px] p-0" align="start">
+                <PopoverContent className="w-[85vw] md:w-[450px] p-0" align="start">
                   <Command shouldFilter={false}>
                     <CommandInput
                       placeholder="Digite código ou descrição do CNAE..."
@@ -380,7 +380,7 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
                     <MapPin className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[400px] p-0" align="start">
+                <PopoverContent className="w-[85vw] md:w-[400px] p-0" align="start">
                   <Command shouldFilter={false}>
                     <CommandInput
                       placeholder="Digite para buscar município..."
