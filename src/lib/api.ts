@@ -264,6 +264,47 @@ export async function createCompany(company: Omit<Company, 'id' | 'phones' | 'me
   return data;
 }
 
+export interface UpdateCompanyData {
+  name?: string;
+  cnpj?: string;
+  cnae?: string;
+  cnaeDescription?: string;
+  city?: string;
+  state?: string;
+  address?: string;
+  cep?: string;
+  segment?: string;
+  website?: string;
+  email?: string;
+  instagram?: string;
+  facebook?: string;
+  linkedin?: string;
+}
+
+export async function updateCompany(companyId: string, data: UpdateCompanyData) {
+  const { error } = await supabase
+    .from('companies')
+    .update({
+      name: data.name,
+      cnpj: data.cnpj,
+      cnae: data.cnae,
+      cnae_description: data.cnaeDescription,
+      city: data.city,
+      state: data.state,
+      address: data.address,
+      cep: data.cep,
+      segment: data.segment,
+      website: data.website,
+      email: data.email,
+      instagram: data.instagram,
+      facebook: data.facebook,
+      linkedin: data.linkedin,
+    })
+    .eq('id', companyId);
+
+  if (error) throw error;
+}
+
 export async function deleteCompany(companyId: string) {
   // First delete all phones associated with the company
   const { error: phonesError } = await supabase
