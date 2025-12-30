@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, Loader2, Building2, Phone, MapPin, Plus, Check, Mail } from 'lucide-react';
+import { Search, Loader2, Building2, Phone, MapPin, Plus, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,15 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface SearchResult {
   cnpj?: string;
-  razao_social?: string;
-  nome_fantasia?: string;
-  cnae?: string;
-  cnae_descricao?: string;
-  municipio?: string;
-  uf?: string;
-  telefone1?: string;
-  telefone2?: string;
-  email?: string;
+  nome?: string;
+  endereco?: string;
+  cep?: string;
+  contatos?: string;
   [key: string]: any;
 }
 
@@ -41,7 +36,6 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   const [uf, setUf] = useState('');
   const [cidade, setCidade] = useState('');
   const [onlyWithPhone, setOnlyWithPhone] = useState(false);
-  const [onlyWithEmail, setOnlyWithEmail] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [isSearching, setIsSearching] = useState(false);
@@ -57,14 +51,11 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
     let filtered = companies;
     
     if (onlyWithPhone) {
-      filtered = filtered.filter((c: SearchResult) => 
-        c.telefone1 || c.telefone2 || c.telefone || c.phone
-      );
+      filtered = filtered.filter((c: SearchResult) => c.contatos && c.contatos.trim() !== '');
     }
     
-    if (onlyWithEmail) {
-      filtered = filtered.filter((c: SearchResult) => c.email);
-    }
+    // Email filter - API doesn't return email, so we skip this
+    // if (onlyWithEmail) { ... }
     
     return filtered;
   };
@@ -183,10 +174,11 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
       let importedCount = 0;
 
       for (const company of toImport) {
-        const companyName = company.nome_fantasia || company.razao_social || company.name || 'Empresa';
-        const cnae = company.cnae || company.cnae_fiscal || '';
-        const city = company.municipio || company.cidade || company.city || '';
-        const state = company.uf || company.estado || company.state || '';
+        const companyName = company.nome || 'Empresa';
+        
+        // Extract city/state from endereco if possible, or use search params
+        const searchCity = cidade || '';
+        const searchState = uf || '';
 
         // Insert company
         const { data: newCompany, error: companyError } = await supabase
@@ -194,10 +186,10 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
           .insert({
             name: companyName,
             cnae: cnae,
-            cnae_description: company.cnae_descricao || company.cnae_description || '',
-            city: city,
-            state: state,
-            segment: company.segmento || company.segment || null,
+            cnae_description: '',
+            city: searchCity,
+            state: searchState,
+            segment: null,
             user_id: user.id,
           })
           .select()
@@ -208,23 +200,21 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
           continue;
         }
 
-        // Insert phones
-        const phones: string[] = [];
-        if (company.telefone1) phones.push(company.telefone1);
-        if (company.telefone2) phones.push(company.telefone2);
-        if (company.telefone) phones.push(company.telefone);
-        if (company.phone) phones.push(company.phone);
-        if (Array.isArray(company.phones)) phones.push(...company.phones);
-
-        for (const phone of phones.filter(Boolean)) {
-          const cleanPhone = phone.replace(/\D/g, '');
-          if (cleanPhone.length >= 10) {
-            await supabase.from('company_phones').insert({
-              company_id: newCompany.id,
-              phone_number: cleanPhone,
-              phone_type: cleanPhone.length === 11 ? 'mobile' : 'landline',
-              status: 'pending',
-            });
+        // Insert phones from contatos field
+        // Format: "(DD) XXXXXXXX, (DD) XXXXXXXX"
+        if (company.contatos) {
+          const phoneMatches = company.contatos.match(/\(\d{2}\)\s*\d{4,5}-?\d{4}/g) || [];
+          
+          for (const phoneMatch of phoneMatches) {
+            const cleanPhone = phoneMatch.replace(/\D/g, '');
+            if (cleanPhone.length >= 10) {
+              await supabase.from('company_phones').insert({
+                company_id: newCompany.id,
+                phone_number: cleanPhone,
+                phone_type: cleanPhone.length === 11 ? 'mobile' : 'landline',
+                status: 'pending',
+              });
+            }
           }
         }
 
@@ -259,7 +249,6 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
     setUf('');
     setCidade('');
     setOnlyWithPhone(false);
-    setOnlyWithEmail(false);
     setResults([]);
     setSelectedResults(new Set());
   };
@@ -335,18 +324,6 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                 Somente com telefone
               </label>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id="email-filter" 
-                checked={onlyWithEmail}
-                onCheckedChange={(checked) => setOnlyWithEmail(checked === true)}
-              />
-              <label htmlFor="email-filter" className="text-sm flex items-center gap-1 cursor-pointer">
-                <Mail className="h-4 w-4" />
-                Somente com email
-              </label>
-            </div>
           </div>
 
           {/* Search Button */}
@@ -391,12 +368,11 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
               <ScrollArea className="flex-1 border rounded-lg">
                 <div className="space-y-1 p-2">
                   {results.map((result, index) => {
-                    const id = result.cnpj || result.id || index.toString();
-                    const name = result.nome_fantasia || result.razao_social || result.name || 'Empresa';
-                    const cnae = result.cnae || result.cnae_fiscal || '';
-                    const city = result.municipio || result.cidade || result.city || '';
-                    const state = result.uf || result.estado || result.state || '';
-                    const phone = result.telefone1 || result.telefone || result.phone || '';
+                    const id = result.cnpj || index.toString();
+                    const name = result.nome || 'Empresa';
+                    const endereco = result.endereco || '';
+                    const cep = result.cep || '';
+                    const contatos = result.contatos || '';
 
                     return (
                       <div
@@ -419,26 +395,23 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                               <Building2 className="h-4 w-4 text-primary shrink-0" />
                               <span className="font-medium truncate">{name}</span>
                               {result.cnpj && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline" className="text-xs font-mono">
                                   {result.cnpj}
                                 </Badge>
                               )}
                             </div>
-                            <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
-                              {cnae && <span>CNAE: {cnae}</span>}
-                              {(city || state) && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {city}{city && state && '/'}{state}
-                                </span>
-                              )}
-                              {phone && (
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {phone}
-                                </span>
-                              )}
-                            </div>
+                            {endereco && (
+                              <div className="flex items-start gap-1 mt-1 text-sm text-muted-foreground">
+                                <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                                <span className="line-clamp-2">{endereco}{cep && ` - CEP: ${cep}`}</span>
+                              </div>
+                            )}
+                            {contatos && (
+                              <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+                                <Phone className="h-3 w-3 shrink-0" />
+                                <span>{contatos}</span>
+                              </div>
+                            )}
                           </div>
                           {selectedResults.has(id) && (
                             <Check className="h-5 w-5 text-primary shrink-0" />
