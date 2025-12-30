@@ -102,17 +102,23 @@ export function useCredits() {
 
   const consumeCredits = useCallback(async (amount: number, description: string, referenceId?: string): Promise<boolean> => {
     if (!user) return false;
-    if (balance < amount) return false;
 
     try {
-      // Update balance
-      const { error: updateError } = await supabase
-        .from('user_credits')
-        .update({ balance: balance - amount })
-        .eq('user_id', user.id);
+      // Use atomic decrement function to avoid race conditions
+      const { data: newBalance, error: updateError } = await supabase
+        .rpc('decrement_credits', { 
+          p_user_id: user.id, 
+          p_amount: amount 
+        });
 
       if (updateError) {
         console.error('Error updating credits:', updateError);
+        return false;
+      }
+
+      // If function returns -1, insufficient balance
+      if (newBalance === -1) {
+        console.error('Insufficient credits');
         return false;
       }
 
@@ -131,15 +137,15 @@ export function useCredits() {
         console.error('Error recording transaction:', transactionError);
       }
 
-      // Update local state
-      setBalance(prev => prev - amount);
+      // Update local state with actual new balance from database
+      setBalance(newBalance);
       
       return true;
     } catch (error) {
       console.error('Error consuming credits:', error);
       return false;
     }
-  }, [user, balance]);
+  }, [user]);
 
   interface CheckoutResult {
     success: boolean;
