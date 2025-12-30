@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Building2, RefreshCw, CheckCircle, Phone, Trash2, Loader2, ChevronLeft, ChevronRight, Sparkles, Globe, Mail, Instagram, Facebook, Linkedin, Eye } from 'lucide-react';
+import { MapPin, Building2, RefreshCw, CheckCircle, Phone, Trash2, Loader2, ChevronLeft, ChevronRight, Sparkles, Globe, Mail, Instagram, Facebook, Linkedin, Eye, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { PhoneStatusBadge } from './PhoneStatusBadge';
+import { ExportCsvDialog } from './ExportCsvDialog';
 import { Company } from '@/types';
 import { validatePhones, deleteCompany, enrichCompany, enrichCompanies } from '@/lib/api';
 import { toast } from 'sonner';
@@ -41,6 +42,7 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
 
@@ -334,6 +336,16 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
                   )}
                 </Button>
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowExportDialog(true)}
+                className="gap-2 text-xs font-medium border-accent/30 hover:bg-accent/10"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Exportar ({selectedIds.size})</span>
+                <span className="sm:hidden">CSV ({selectedIds.size})</span>
+              </Button>
               <Button
                 variant="destructive"
                 size="sm"
@@ -673,6 +685,13 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ExportCsvDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        companies={companies}
+        preSelectedIds={selectedIds}
+      />
     </div>
   );
 }
