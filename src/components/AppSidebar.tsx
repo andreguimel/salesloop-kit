@@ -1,8 +1,10 @@
-import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target } from "lucide-react";
+import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useOverdueTasks } from "@/hooks/useOverdueTasks";
 
 import {
   Sidebar,
@@ -20,7 +22,7 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Buscar Empresas", url: "/buscar", icon: Search },
-  { title: "CRM", url: "/crm", icon: Target },
+  { title: "CRM", url: "/crm", icon: Target, showOverdue: true },
   { title: "Histórico", url: "/historico", icon: History },
   { title: "Relatórios", url: "/relatorios", icon: FileBarChart },
 ];
@@ -31,6 +33,7 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const { signOut, user } = useAuth();
+  const { count: overdueCount } = useOverdueTasks();
 
   const isActive = (path: string) => currentPath === path;
 
@@ -72,8 +75,25 @@ export function AppSidebar() {
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-muted/50"
                       activeClassName="bg-primary/10 text-primary font-medium"
                     >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <div className="relative">
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        {item.showOverdue && overdueCount > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                            {overdueCount > 9 ? '9+' : overdueCount}
+                          </span>
+                        )}
+                      </div>
+                      {!collapsed && (
+                        <span className="flex-1 flex items-center justify-between">
+                          {item.title}
+                          {item.showOverdue && overdueCount > 0 && (
+                            <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-[10px]">
+                              <AlertCircle className="h-3 w-3 mr-0.5" />
+                              {overdueCount} vencida{overdueCount > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                        </span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
