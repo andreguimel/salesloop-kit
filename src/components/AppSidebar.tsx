@@ -80,7 +80,7 @@ export function AppSidebar() {
             to="/creditos" 
             className={cn(
               "flex items-center gap-2 p-2 rounded-lg transition-colors hover:bg-sidebar-accent",
-              currentPath === "/creditos" && "bg-sidebar-primary"
+              currentPath === "/creditos" && "bg-sidebar-accent"
             )}
           >
             <Coins className={cn(
