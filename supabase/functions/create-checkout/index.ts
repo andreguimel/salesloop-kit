@@ -91,6 +91,8 @@ serve(async (req) => {
         customer: {
           email: customerEmail,
           name: customerName,
+          cellphone: '11999999999', // Campo obrigatório pela API
+          taxId: '00000000000', // CPF placeholder
         },
         metadata: {
           userId: user.id,
