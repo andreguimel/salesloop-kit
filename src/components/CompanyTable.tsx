@@ -454,6 +454,67 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
               )}
             </div>
 
+            {/* Enriched Data */}
+            {company.enrichedAt && (
+              <div className="space-y-2 pt-2 border-t border-border/30">
+                {company.website && (
+                  <a 
+                    href={company.website.startsWith('http') ? company.website : `https://${company.website}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+                  >
+                    <Globe className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{company.website.replace(/^https?:\/\//, '')}</span>
+                  </a>
+                )}
+                {company.email && (
+                  <a 
+                    href={`mailto:${company.email}`}
+                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{company.email}</span>
+                  </a>
+                )}
+                <div className="flex items-center gap-3">
+                  {company.instagram && (
+                    <a 
+                      href={company.instagram.startsWith('http') ? company.instagram : `https://instagram.com/${company.instagram.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-pink-500 transition-colors"
+                    >
+                      <Instagram className="h-4 w-4" />
+                    </a>
+                  )}
+                  {company.facebook && (
+                    <a 
+                      href={company.facebook.startsWith('http') ? company.facebook : `https://facebook.com/${company.facebook}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-blue-600 transition-colors"
+                    >
+                      <Facebook className="h-4 w-4" />
+                    </a>
+                  )}
+                  {company.linkedin && (
+                    <a 
+                      href={company.linkedin.startsWith('http') ? company.linkedin : `https://linkedin.com/company/${company.linkedin}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-blue-700 transition-colors"
+                    >
+                      <Linkedin className="h-4 w-4" />
+                    </a>
+                  )}
+                </div>
+                {company.aiSummary && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">{company.aiSummary}</p>
+                )}
+              </div>
+            )}
+
             {/* Actions */}
             {company.phones.some(p => p.status === 'pending') && (
               <Button
@@ -502,6 +563,9 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
               </th>
               <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
                 Telefones
+              </th>
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
+                Contatos
               </th>
               <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
                 Ações
@@ -568,6 +632,81 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
                       <span className="text-sm text-muted-foreground">Sem telefone</span>
                     )}
                   </div>
+                </td>
+                <td className="px-5 py-4">
+                  {company.enrichedAt ? (
+                    <div className="space-y-1.5 max-w-xs">
+                      {company.website && (
+                        <a 
+                          href={company.website.startsWith('http') ? company.website : `https://${company.website}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-sm text-primary hover:underline truncate"
+                        >
+                          <Globe className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{company.website.replace(/^https?:\/\//, '')}</span>
+                        </a>
+                      )}
+                      {company.email && (
+                        <a 
+                          href={`mailto:${company.email}`}
+                          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground truncate"
+                        >
+                          <Mail className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{company.email}</span>
+                        </a>
+                      )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {company.instagram && (
+                          <a 
+                            href={company.instagram.startsWith('http') ? company.instagram : `https://instagram.com/${company.instagram.replace('@', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-pink-500 transition-colors"
+                            title={company.instagram}
+                          >
+                            <Instagram className="h-4 w-4" />
+                          </a>
+                        )}
+                        {company.facebook && (
+                          <a 
+                            href={company.facebook.startsWith('http') ? company.facebook : `https://facebook.com/${company.facebook}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-blue-600 transition-colors"
+                            title={company.facebook}
+                          >
+                            <Facebook className="h-4 w-4" />
+                          </a>
+                        )}
+                        {company.linkedin && (
+                          <a 
+                            href={company.linkedin.startsWith('http') ? company.linkedin : `https://linkedin.com/company/${company.linkedin}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-blue-700 transition-colors"
+                            title={company.linkedin}
+                          >
+                            <Linkedin className="h-4 w-4" />
+                          </a>
+                        )}
+                      </div>
+                      {company.aiSummary && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <p className="text-xs text-muted-foreground line-clamp-2 cursor-help">{company.aiSummary}</p>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-sm">
+                              <p>{company.aiSummary}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">-</span>
+                  )}
                 </td>
                 <td className="px-5 py-4 text-right">
                   <div className="flex flex-col gap-1.5 items-end">
