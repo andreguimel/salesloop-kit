@@ -27,6 +27,11 @@ export interface Company {
   linkedin?: string;
   aiSummary?: string;
   enrichedAt?: string;
+  // CRM fields
+  crmStageId?: string;
+  dealValue?: number;
+  expectedCloseDate?: string;
+  crmNotes?: string;
 }
 
 export interface MessageTemplate {
@@ -47,4 +52,25 @@ export interface DashboardMetrics {
   validPhones: number;
   messagesSent: number;
   pendingMessages: number;
+}
+
+// CRM Types
+export interface PipelineStage {
+  id: string;
+  name: string;
+  color: string;
+  position: number;
+}
+
+export interface CrmActivity {
+  id: string;
+  companyId: string;
+  activityType: 'note' | 'call' | 'email' | 'meeting' | 'task';
+  title: string;
+  description?: string;
+  isCompleted: boolean;
+  dueDate?: string;
+  completedAt?: string;
+  createdAt: string;
+  company?: Company;
 }
