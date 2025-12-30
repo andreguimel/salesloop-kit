@@ -56,13 +56,14 @@ serve(async (req) => {
     // Get user profile for customer info
     const { data: profile } = await supabase
       .from('profiles')
-      .select('email, full_name, phone')
+      .select('email, full_name, phone, cpf')
       .eq('id', user.id)
       .single();
 
     const customerEmail = profile?.email || user.email || '';
     const customerName = profile?.full_name || 'Cliente';
     const customerPhone = profile?.phone || '11999999999';
+    const customerCpf = profile?.cpf || '00000000000';
 
     // Calculate total credits (base + bonus)
     const totalCredits = creditPackage.credits + creditPackage.bonus_credits;
@@ -93,6 +94,7 @@ serve(async (req) => {
           email: customerEmail,
           name: customerName,
           cellphone: customerPhone,
+          taxId: customerCpf,
         },
         metadata: {
           userId: user.id,
