@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Company, PipelineStage, CrmActivity } from '@/types';
+import { useOverdueTasks } from '@/hooks/useOverdueTasks';
 import {
   fetchPipelineStages,
   createPipelineStage,
@@ -31,6 +32,7 @@ const CRM = () => {
   const [metrics, setMetrics] = useState<CrmMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showActivities, setShowActivities] = useState(false);
+  const { count: overdueCount } = useOverdueTasks();
 
   useEffect(() => {
     loadData();
@@ -280,13 +282,24 @@ const CRM = () => {
       <div className="fixed bottom-6 right-6 z-50">
         <Sheet open={showActivities} onOpenChange={setShowActivities}>
           <SheetTrigger asChild>
-            <Button size="lg" className="gap-2 shadow-lg">
+            <Button 
+              size="lg" 
+              className={`gap-2 shadow-lg relative ${overdueCount > 0 ? 'animate-pulse' : ''}`}
+            >
               <ClipboardList className="h-5 w-5" />
               Atividades
               {activities.filter(a => !a.isCompleted).length > 0 && (
                 <Badge variant="secondary" className="ml-1">
                   {activities.filter(a => !a.isCompleted).length}
                 </Badge>
+              )}
+              {overdueCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                  <span className="relative inline-flex rounded-full h-5 w-5 bg-destructive text-destructive-foreground text-xs items-center justify-center font-medium">
+                    {overdueCount}
+                  </span>
+                </span>
               )}
             </Button>
           </SheetTrigger>
