@@ -524,25 +524,25 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1">
-                    {company.phones.some(p => p.status === 'pending') && (
+                    {company.phones.length > 0 && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleValidatePhones(company)}
-                              disabled={validatingCompanyId === company.id}
+                              onClick={() => {
+                                const phone = company.phones[0];
+                                const cleanNumber = phone.number.replace(/\D/g, '');
+                                const fullNumber = cleanNumber.startsWith('55') ? cleanNumber : `55${cleanNumber}`;
+                                window.open(`https://wa.me/${fullNumber}`, '_blank');
+                              }}
                               className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
                             >
-                              {validatingCompanyId === company.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <MessageCircle className="h-4 w-4" />
-                              )}
+                              <MessageCircle className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Validar WhatsApp</TooltipContent>
+                          <TooltipContent>Abrir WhatsApp</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     )}
