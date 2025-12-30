@@ -1,22 +1,17 @@
 import { useState, useMemo } from 'react';
-import { MapPin, Building2, Smartphone, RefreshCw, CheckCircle } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { MapPin, Building2, Smartphone, RefreshCw, CheckCircle, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PhoneStatusBadge } from './PhoneStatusBadge';
-import { MessageStatusBadge } from './MessageStatusBadge';
 import { Company } from '@/types';
-import { cn } from '@/lib/utils';
 import { validatePhones } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface CompanyTableProps {
   companies: Company[];
-  onSelectPhones: (companyId: string, phones: string[]) => void;
-  selectedPhones: Record<string, string[]>;
   onPhonesValidated?: () => void;
 }
 
-export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhonesValidated }: CompanyTableProps) {
+export function CompanyTable({ companies, onPhonesValidated }: CompanyTableProps) {
   const [validatingCompanyId, setValidatingCompanyId] = useState<string | null>(null);
   const [isValidatingAll, setIsValidatingAll] = useState(false);
 
@@ -26,24 +21,6 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhon
       c.phones.filter(p => p.status === 'pending' && p.id).map(p => p.id!)
     );
   }, [companies]);
-
-  const handlePhoneToggle = (companyId: string, phoneNumber: string, isValid: boolean) => {
-    if (!isValid) return;
-    
-    const currentSelection = selectedPhones[companyId] || [];
-    const newSelection = currentSelection.includes(phoneNumber)
-      ? currentSelection.filter((p) => p !== phoneNumber)
-      : [...currentSelection, phoneNumber];
-    
-    onSelectPhones(companyId, newSelection);
-  };
-
-  const handleSelectAllValid = (company: Company) => {
-    const validPhones = company.phones
-      .filter((p) => p.status === 'valid')
-      .map((p) => p.number);
-    onSelectPhones(company.id, validPhones);
-  };
 
   const handleValidatePhones = async (company: Company) => {
     const pendingPhones = company.phones.filter(p => p.status === 'pending' && p.id);
@@ -102,6 +79,17 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhon
     } finally {
       setIsValidatingAll(false);
     }
+  };
+
+  // Format phone number for display
+  const formatPhone = (phone: string) => {
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 11) {
+      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+    } else if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
+    }
+    return phone;
   };
 
   if (companies.length === 0) {
@@ -169,9 +157,6 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhon
               <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
                 Telefones
               </th>
-              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
-                Status
-              </th>
               <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
                 Ações
               </th>
@@ -186,7 +171,9 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhon
               >
                 <td className="px-5 py-4">
                   <div className="font-semibold text-foreground">{company.name}</div>
-                  <div className="text-sm text-muted-foreground mt-0.5">{company.segment}</div>
+                  {company.segment && (
+                    <div className="text-sm text-muted-foreground mt-0.5">{company.segment}</div>
+                  )}
                 </td>
                 <td className="px-5 py-4">
                   <code className="text-xs font-mono px-2 py-1 rounded bg-secondary text-muted-foreground">
@@ -201,27 +188,20 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhon
                 </td>
                 <td className="px-5 py-4">
                   <div className="space-y-2">
-                    {company.phones.map((phone) => (
-                      <div key={phone.number} className="flex items-center gap-3">
-                        <Checkbox
-                          checked={selectedPhones[company.id]?.includes(phone.number) || false}
-                          onCheckedChange={() => handlePhoneToggle(company.id, phone.number, phone.status === 'valid')}
-                          disabled={phone.status !== 'valid'}
-                          className={cn(
-                            'border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary',
-                            phone.status !== 'valid' && 'opacity-40 cursor-not-allowed'
-                          )}
-                        />
-                        <div className="flex items-center gap-2">
-                          <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
-                          <PhoneStatusBadge phone={phone} />
+                    {company.phones.length > 0 ? (
+                      company.phones.map((phone) => (
+                        <div key={phone.number} className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm font-mono">{formatPhone(phone.number)}</span>
+                            <PhoneStatusBadge phone={phone} />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Sem telefone</span>
+                    )}
                   </div>
-                </td>
-                <td className="px-5 py-4">
-                  <MessageStatusBadge status={company.messageStatus} />
                 </td>
                 <td className="px-5 py-4 text-right">
                   <div className="flex flex-col gap-1.5 items-end">
@@ -246,14 +226,6 @@ export function CompanyTable({ companies, onSelectPhones, selectedPhones, onPhon
                         )}
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSelectAllValid(company)}
-                      className="text-xs font-medium text-primary hover:text-primary hover:bg-primary/10"
-                    >
-                      Selecionar válidos
-                    </Button>
                   </div>
                 </td>
               </tr>

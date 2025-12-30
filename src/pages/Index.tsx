@@ -1,10 +1,9 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Building2, Phone, Send, TrendingUp, Plus, Loader2, Download } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Building2, Phone, TrendingUp, Plus, Loader2, Download } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { MetricCard } from '@/components/MetricCard';
 import { SearchForm } from '@/components/SearchForm';
 import { CompanyTable } from '@/components/CompanyTable';
-import { MessagePanel } from '@/components/MessagePanel';
 import { AddCompanyDialog } from '@/components/AddCompanyDialog';
 import { SearchApiDialog } from '@/components/SearchApiDialog';
 import { ExportCsvDialog } from '@/components/ExportCsvDialog';
@@ -12,14 +11,9 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { 
   fetchCompanies, 
-  fetchTemplates, 
-  createTemplate, 
-  updateTemplate, 
-  deleteTemplate,
-  sendMessage,
   fetchMetrics
 } from '@/lib/api';
-import { Company, MessageTemplate, SearchFilters } from '@/types';
+import { Company, SearchFilters } from '@/types';
 
 interface DbCompany {
   id: string;
@@ -37,18 +31,9 @@ interface DbCompany {
   }>;
 }
 
-interface DbTemplate {
-  id: string;
-  name: string;
-  content: string;
-  created_at: string;
-}
-
 const Index = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
-  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
-  const [selectedPhones, setSelectedPhones] = useState<Record<string, string[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [showAddCompany, setShowAddCompany] = useState(false);
@@ -65,9 +50,8 @@ const Index = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [companiesData, templatesData, metricsData] = await Promise.all([
+      const [companiesData, metricsData] = await Promise.all([
         fetchCompanies(),
-        fetchTemplates(),
         fetchMetrics(),
       ]);
 
@@ -88,16 +72,8 @@ const Index = () => {
         messageStatus: 'none' as const,
       }));
 
-      const mappedTemplates: MessageTemplate[] = (templatesData as DbTemplate[]).map((t) => ({
-        id: t.id,
-        name: t.name,
-        content: t.content,
-        createdAt: new Date(t.created_at),
-      }));
-
       setCompanies(mappedCompanies);
       setFilteredCompanies(mappedCompanies);
-      setTemplates(mappedTemplates);
       setMetrics(metricsData);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -110,11 +86,6 @@ const Index = () => {
       setIsLoading(false);
     }
   };
-
-  // Count selected phones
-  const selectedPhonesCount = useMemo(() => {
-    return Object.values(selectedPhones).reduce((acc, phones) => acc + phones.length, 0);
-  }, [selectedPhones]);
 
   const handleSearch = (filters: SearchFilters) => {
     setIsSearching(true);
@@ -137,103 +108,6 @@ const Index = () => {
       setFilteredCompanies(filtered);
       setIsSearching(false);
     }, 300);
-  };
-
-  const handleSelectPhones = (companyId: string, phones: string[]) => {
-    setSelectedPhones((prev) => ({
-      ...prev,
-      [companyId]: phones,
-    }));
-  };
-
-  const handleAddTemplate = async (template: Omit<MessageTemplate, 'id' | 'createdAt'>) => {
-    try {
-      const newTemplate = await createTemplate(template);
-      setTemplates((prev) => [...prev, {
-        id: newTemplate.id,
-        name: newTemplate.name,
-        content: newTemplate.content,
-        createdAt: new Date(newTemplate.created_at),
-      }]);
-      toast({ title: 'Template criado!' });
-    } catch (error) {
-      toast({
-        title: 'Erro ao criar template',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleEditTemplate = async (id: string, template: Omit<MessageTemplate, 'id' | 'createdAt'>) => {
-    try {
-      await updateTemplate(id, template);
-      setTemplates((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, ...template } : t))
-      );
-      toast({ title: 'Template atualizado!' });
-    } catch (error) {
-      toast({
-        title: 'Erro ao atualizar template',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleDeleteTemplate = async (id: string) => {
-    try {
-      await deleteTemplate(id);
-      setTemplates((prev) => prev.filter((t) => t.id !== id));
-      toast({ title: 'Template excluído!' });
-    } catch (error) {
-      toast({
-        title: 'Erro ao excluir template',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleSendMessages = async (channel: 'whatsapp' | 'sms' | 'both', templateId: string) => {
-    const template = templates.find(t => t.id === templateId);
-    if (!template) return;
-
-    const channels: ('whatsapp' | 'sms')[] = channel === 'both' ? ['whatsapp', 'sms'] : [channel];
-    let sentCount = 0;
-
-    try {
-      for (const companyId of Object.keys(selectedPhones)) {
-        const phones = selectedPhones[companyId];
-        const company = companies.find(c => c.id === companyId);
-        
-        if (!company) continue;
-
-        for (const phoneNumber of phones) {
-          const phone = company.phones.find(p => p.number === phoneNumber);
-          if (!phone || !phone.id) continue;
-
-          for (const ch of channels) {
-            await sendMessage(companyId, phone.id, templateId, ch, template.content);
-            sentCount++;
-          }
-        }
-      }
-
-      toast({
-        title: 'Mensagens enviadas!',
-        description: `${sentCount} mensagem(ns) foram enviadas com sucesso.`,
-      });
-
-      // Refresh metrics
-      const metricsData = await fetchMetrics();
-      setMetrics(metricsData);
-
-      // Clear selections
-      setSelectedPhones({});
-    } catch (error) {
-      toast({
-        title: 'Erro ao enviar mensagens',
-        variant: 'destructive',
-      });
-    }
   };
 
   const handleCompanyAdded = () => {
@@ -275,7 +149,7 @@ const Index = () => {
                 Prospecção <span className="text-gradient">Inteligente</span>
               </h2>
               <p className="text-muted-foreground max-w-xl">
-                Encontre empresas, valide telefones e envie mensagens automatizadas.
+                Encontre empresas e valide telefones de forma automatizada.
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -301,7 +175,7 @@ const Index = () => {
           </div>
 
           {/* Metrics Dashboard */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <MetricCard
               title="Empresas"
               value={metrics.totalCompanies}
@@ -317,41 +191,22 @@ const Index = () => {
               delay={50}
             />
             <MetricCard
-              title="Mensagens Enviadas"
-              value={metrics.messagesSent}
-              icon={Send}
+              title="Taxa de Validação"
+              value={`${metrics.totalCompanies > 0 ? Math.round((metrics.validPhones / Math.max(metrics.validPhones + metrics.pendingMessages, 1)) * 100) : 0}%`}
+              icon={TrendingUp}
               variant="success"
               delay={100}
-            />
-            <MetricCard
-              title="Taxa de Sucesso"
-              value={`${metrics.messagesSent > 0 ? Math.round((metrics.messagesSent / (metrics.messagesSent + metrics.pendingMessages + 1)) * 100) : 0}%`}
-              icon={TrendingUp}
-              variant="default"
-              delay={150}
             />
           </div>
 
           {/* Search Form */}
           <SearchForm onSearch={handleSearch} isLoading={isSearching} />
 
-          {/* Main Content Grid */}
-          <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-            <CompanyTable
-              companies={filteredCompanies}
-              onSelectPhones={handleSelectPhones}
-              selectedPhones={selectedPhones}
-              onPhonesValidated={loadData}
-            />
-            <MessagePanel
-              templates={templates}
-              onAddTemplate={handleAddTemplate}
-              onEditTemplate={handleEditTemplate}
-              onDeleteTemplate={handleDeleteTemplate}
-              selectedPhonesCount={selectedPhonesCount}
-              onSendMessages={handleSendMessages}
-            />
-          </div>
+          {/* Company Table - Full Width */}
+          <CompanyTable
+            companies={filteredCompanies}
+            onPhonesValidated={loadData}
+          />
         </main>
 
         {/* Footer */}
