@@ -385,165 +385,40 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
         {paginatedCompanies.map((company, index) => (
           <div 
             key={company.id}
-            className="p-4 space-y-3 animate-fade-up"
-            style={{ animationDelay: `${400 + index * 30}ms` }}
+            className="p-3 flex items-center gap-3 animate-fade-up"
+            style={{ animationDelay: `${400 + index * 20}ms` }}
           >
-            {/* Company Name & CNPJ */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                <Checkbox
-                  checked={selectedIds.has(company.id)}
-                  onCheckedChange={() => toggleSelect(company.id)}
-                  className="mt-1"
-                />
-                <div className="flex-1 min-w-0">
-                  <h4 
-                    className="font-semibold text-foreground truncate hover:text-primary cursor-pointer transition-colors"
-                    onClick={() => navigate(`/empresa/${company.id}`)}
-                  >
-                    {company.name}
-                  </h4>
-                  {company.cnpj && (
-                    <code className="text-xs font-mono text-muted-foreground">
-                      {formatCnpj(company.cnpj)}
-                    </code>
-                  )}
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCompanyToDelete(company)}
-                disabled={deletingCompanyId === company.id}
-                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-              >
-                {deletingCompanyId === company.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-
-            {/* CNAE */}
-            {company.cnae && (
-              <code className="text-xs font-mono px-2 py-1 rounded bg-secondary text-muted-foreground inline-block">
-                CNAE: {company.cnae}
-              </code>
-            )}
-
-            {/* Location */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
-                {company.city}, {company.state}
-              </div>
-              {company.address && (
-                <p className="text-xs text-muted-foreground line-clamp-2 pl-5">
-                  {company.address}
-                  {company.cep && ` - CEP: ${company.cep}`}
-                </p>
-              )}
-            </div>
-
-            {/* Phones */}
-            <div className="space-y-1.5">
-              {company.phones.length > 0 ? (
-                company.phones.map((phone) => (
-                  <div key={phone.number} className="flex items-center gap-2">
-                    <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-sm font-mono">{formatPhone(phone.number)}</span>
-                    <PhoneStatusBadge phone={phone} showNumber={false} />
-                  </div>
-                ))
-              ) : (
-                <span className="text-sm text-muted-foreground">Sem telefone</span>
-              )}
-            </div>
-
-            {/* Enriched Data */}
-            {company.enrichedAt && (
-              <div className="space-y-2 pt-2 border-t border-border/30">
-                {company.website && (
-                  <a 
-                    href={company.website.startsWith('http') ? company.website : `https://${company.website}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-sm text-primary hover:underline"
-                  >
-                    <Globe className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{company.website.replace(/^https?:\/\//, '')}</span>
-                  </a>
-                )}
-                {company.email && (
-                  <a 
-                    href={`mailto:${company.email}`}
-                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    <Mail className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{company.email}</span>
-                  </a>
-                )}
-                <div className="flex items-center gap-3">
-                  {company.instagram && (
-                    <a 
-                      href={company.instagram.startsWith('http') ? company.instagram : `https://instagram.com/${company.instagram.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-muted-foreground hover:text-pink-500 transition-colors"
-                    >
-                      <Instagram className="h-4 w-4" />
-                    </a>
-                  )}
-                  {company.facebook && (
-                    <a 
-                      href={company.facebook.startsWith('http') ? company.facebook : `https://facebook.com/${company.facebook}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-muted-foreground hover:text-blue-600 transition-colors"
-                    >
-                      <Facebook className="h-4 w-4" />
-                    </a>
-                  )}
-                  {company.linkedin && (
-                    <a 
-                      href={company.linkedin.startsWith('http') ? company.linkedin : `https://linkedin.com/company/${company.linkedin}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-muted-foreground hover:text-blue-700 transition-colors"
-                    >
-                      <Linkedin className="h-4 w-4" />
-                    </a>
-                  )}
-                </div>
-                {company.aiSummary && (
-                  <p className="text-xs text-muted-foreground line-clamp-2">{company.aiSummary}</p>
-                )}
-              </div>
-            )}
-
-            {/* Actions */}
-            {company.phones.some(p => p.status === 'pending') && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleValidatePhones(company)}
-                disabled={validatingCompanyId === company.id}
-                className="w-full text-xs font-medium gap-1.5"
-              >
-                {validatingCompanyId === company.id ? (
+            <Checkbox
+              checked={selectedIds.has(company.id)}
+              onCheckedChange={() => toggleSelect(company.id)}
+            />
+            <div 
+              className="flex-1 min-w-0 cursor-pointer"
+              onClick={() => navigate(`/empresa/${company.id}`)}
+            >
+              <h4 className="font-medium text-foreground truncate text-sm">
+                {company.name}
+              </h4>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate">{company.city}, {company.state}</span>
+                {company.phones.length > 0 && (
                   <>
-                    <RefreshCw className="h-3 w-3 animate-spin" />
-                    Validando...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-3 w-3" />
-                    Validar WhatsApp
+                    <span className="text-border">•</span>
+                    <Phone className="h-3 w-3 shrink-0" />
+                    <span className="font-mono">{formatPhone(company.phones[0].number)}</span>
                   </>
                 )}
-              </Button>
-            )}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(`/empresa/${company.id}`)}
+              className="h-8 w-8 shrink-0"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
           </div>
         ))}
       </div>
@@ -553,28 +428,25 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
         <table className="w-full">
           <thead>
             <tr className="border-b border-border/50 bg-secondary/30">
-              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4 w-12">
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 w-10">
                 <Checkbox
                   checked={selectedIds.size === paginatedCompanies.length && paginatedCompanies.length > 0}
                   onCheckedChange={toggleSelectAll}
                 />
               </th>
-              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">
                 Empresa
               </th>
-              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
-                CNPJ
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">
+                Local
               </th>
-              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
-                Local / Endereço
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">
+                Telefone
               </th>
-              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
-                Telefones
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">
+                Status
               </th>
-              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
-                Contatos
-              </th>
-              <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
+              <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3 w-28">
                 Ações
               </th>
             </tr>
@@ -584,257 +456,93 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
               <tr 
                 key={company.id}
                 className={`hover:bg-secondary/20 transition-colors animate-fade-up ${selectedIds.has(company.id) ? 'bg-primary/5' : ''}`}
-                style={{ animationDelay: `${400 + index * 50}ms` }}
+                style={{ animationDelay: `${400 + index * 30}ms` }}
               >
-                <td className="px-5 py-4 w-12">
+                <td className="px-4 py-3 w-10">
                   <Checkbox
                     checked={selectedIds.has(company.id)}
                     onCheckedChange={() => toggleSelect(company.id)}
                   />
                 </td>
-                <td className="px-5 py-4">
+                <td className="px-4 py-3">
                   <div 
-                    className="font-semibold text-foreground hover:text-primary cursor-pointer transition-colors"
+                    className="font-medium text-foreground hover:text-primary cursor-pointer transition-colors truncate max-w-[200px]"
                     onClick={() => navigate(`/empresa/${company.id}`)}
+                    title={company.name}
                   >
                     {company.name}
                   </div>
-                  {company.cnae && (
-                    <code className="text-xs font-mono px-1.5 py-0.5 rounded bg-secondary text-muted-foreground mt-1 inline-block">
-                      CNAE: {company.cnae}
-                    </code>
-                  )}
                 </td>
-                <td className="px-5 py-4">
-                  {company.cnpj ? (
-                    <code className="text-sm font-mono text-foreground">
-                      {formatCnpj(company.cnpj)}
-                    </code>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate max-w-[120px]">{company.city}, {company.state}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  {company.phones.length > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-sm font-mono">{formatPhone(company.phones[0].number)}</span>
+                      {company.phones.length > 1 && (
+                        <span className="text-xs text-muted-foreground">+{company.phones.length - 1}</span>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-sm text-muted-foreground">-</span>
                   )}
                 </td>
-                <td className="px-5 py-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5 shrink-0" />
-                      {company.city}, {company.state}
-                    </div>
-                    {company.address && (
-                      <div className="text-xs text-muted-foreground line-clamp-2 max-w-xs">
-                        {company.address}
-                        {company.cep && ` - CEP: ${company.cep}`}
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="space-y-2">
-                    {company.phones.length > 0 ? (
-                      company.phones.map((phone) => (
-                        <div key={phone.number} className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-sm font-mono">{formatPhone(phone.number)}</span>
-                            <PhoneStatusBadge phone={phone} showNumber={false} />
-                          </div>
-                        </div>
-                      ))
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    {company.enrichedAt ? (
+                      <Badge variant="secondary" className="text-xs gap-1">
+                        <CheckCircle className="h-3 w-3 text-green-500" />
+                        Enriquecido
+                      </Badge>
                     ) : (
-                      <span className="text-sm text-muted-foreground">Sem telefone</span>
+                      <Badge variant="outline" className="text-xs text-muted-foreground">
+                        Básico
+                      </Badge>
                     )}
                   </div>
                 </td>
-                <td className="px-5 py-4">
-                  {company.enrichedAt ? (
-                    <div className="space-y-1.5 max-w-xs">
-                      {company.website && (
-                        <a 
-                          href={company.website.startsWith('http') ? company.website : `https://${company.website}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-sm text-primary hover:underline truncate"
-                        >
-                          <Globe className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">{company.website.replace(/^https?:\/\//, '')}</span>
-                        </a>
-                      )}
-                      {company.email && (
-                        <a 
-                          href={`mailto:${company.email}`}
-                          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground truncate"
-                        >
-                          <Mail className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">{company.email}</span>
-                        </a>
-                      )}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {company.instagram && (
-                          <a 
-                            href={company.instagram.startsWith('http') ? company.instagram : `https://instagram.com/${company.instagram.replace('@', '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-pink-500 transition-colors"
-                            title={company.instagram}
-                          >
-                            <Instagram className="h-4 w-4" />
-                          </a>
-                        )}
-                        {company.facebook && (
-                          <a 
-                            href={company.facebook.startsWith('http') ? company.facebook : `https://facebook.com/${company.facebook}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-blue-600 transition-colors"
-                            title={company.facebook}
-                          >
-                            <Facebook className="h-4 w-4" />
-                          </a>
-                        )}
-                        {company.linkedin && (
-                          <a 
-                            href={company.linkedin.startsWith('http') ? company.linkedin : `https://linkedin.com/company/${company.linkedin}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-blue-700 transition-colors"
-                            title={company.linkedin}
-                          >
-                            <Linkedin className="h-4 w-4" />
-                          </a>
-                        )}
-                      </div>
-                      {company.aiSummary && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <p className="text-xs text-muted-foreground line-clamp-2 cursor-help">{company.aiSummary}</p>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-sm">
-                              <p>{company.aiSummary}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">-</span>
-                  )}
-                </td>
-                <td className="px-5 py-4 text-right">
-                  <div className="flex flex-col gap-1.5 items-end">
+                <td className="px-4 py-3 text-right">
+                  <div className="flex items-center justify-end gap-1">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            variant={company.enrichedAt ? "ghost" : "default"}
-                            size="sm"
-                            onClick={() => handleEnrichCompany(company)}
-                            disabled={enrichingCompanyId === company.id || !!company.enrichedAt}
-                            className={`text-xs font-medium gap-1.5 ${company.enrichedAt ? 'text-muted-foreground' : ''}`}
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate(`/empresa/${company.id}`)}
+                            className="h-8 w-8"
                           >
-                            {enrichingCompanyId === company.id ? (
-                              <>
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                Buscando...
-                              </>
-                            ) : company.enrichedAt ? (
-                              <>
-                                <CheckCircle className="h-3 w-3 text-green-500" />
-                                Enriquecido
-                              </>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Ver detalhes</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setCompanyToDelete(company)}
+                            disabled={deletingCompanyId === company.id}
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            {deletingCompanyId === company.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              <>
-                                <Sparkles className="h-3 w-3" />
-                                Buscar com IA
-                              </>
+                              <Trash2 className="h-4 w-4" />
                             )}
                           </Button>
                         </TooltipTrigger>
-                        {company.enrichedAt && (
-                          <TooltipContent>
-                            <div className="space-y-1 text-xs">
-                              {company.website && (
-                                <div className="flex items-center gap-1">
-                                  <Globe className="h-3 w-3" />
-                                  <a href={company.website} target="_blank" rel="noopener noreferrer" className="hover:underline">{company.website}</a>
-                                </div>
-                              )}
-                              {company.email && (
-                                <div className="flex items-center gap-1">
-                                  <Mail className="h-3 w-3" />
-                                  <a href={`mailto:${company.email}`} className="hover:underline">{company.email}</a>
-                                </div>
-                              )}
-                              {company.instagram && (
-                                <div className="flex items-center gap-1">
-                                  <Instagram className="h-3 w-3" />
-                                  {company.instagram}
-                                </div>
-                              )}
-                              {company.facebook && (
-                                <div className="flex items-center gap-1">
-                                  <Facebook className="h-3 w-3" />
-                                  {company.facebook}
-                                </div>
-                              )}
-                              {company.linkedin && (
-                                <div className="flex items-center gap-1">
-                                  <Linkedin className="h-3 w-3" />
-                                  {company.linkedin}
-                                </div>
-                              )}
-                              {company.aiSummary && (
-                                <p className="mt-1 max-w-xs">{company.aiSummary}</p>
-                              )}
-                            </div>
-                          </TooltipContent>
-                        )}
+                        <TooltipContent>Excluir</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    {company.phones.some(p => p.status === 'pending') && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleValidatePhones(company)}
-                        disabled={validatingCompanyId === company.id}
-                        className="text-xs font-medium gap-1.5"
-                      >
-                        {validatingCompanyId === company.id ? (
-                          <>
-                            <RefreshCw className="h-3 w-3 animate-spin" />
-                            Validando...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-3 w-3" />
-                            Validar WhatsApp
-                          </>
-                        )}
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/empresa/${company.id}`)}
-                      className="text-xs font-medium gap-1.5"
-                    >
-                      <Eye className="h-3 w-3" />
-                      Ver detalhes
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCompanyToDelete(company)}
-                      disabled={deletingCompanyId === company.id}
-                      className="text-xs font-medium gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      {deletingCompanyId === company.id ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3 w-3" />
-                      )}
-                      Excluir
-                    </Button>
                   </div>
                 </td>
               </tr>
