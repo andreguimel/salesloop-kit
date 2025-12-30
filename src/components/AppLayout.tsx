@@ -17,7 +17,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <SidebarTrigger className="mr-4">
               <Menu className="h-5 w-5" />
             </SidebarTrigger>
-            <span className="font-semibold text-sm md:hidden">ProspectPro</span>
+            <span className="font-semibold text-sm md:hidden">Achei Leads</span>
           </header>
           <main className="flex-1 overflow-x-hidden">
             {children}

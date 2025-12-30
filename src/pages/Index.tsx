@@ -213,7 +213,7 @@ const Index = () => {
         <footer className="border-t border-border/30 mt-16">
           <div className="container px-4 md:px-8 py-6">
             <p className="text-center text-sm text-muted-foreground">
-              © 2024 ProspectPro — Prospecção comercial inteligente
+              © 2024 Achei Leads — Prospecção comercial inteligente
             </p>
           </div>
         </footer>

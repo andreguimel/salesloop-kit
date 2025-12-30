@@ -79,7 +79,7 @@ export default function Auth() {
         } else {
           toast({
             title: 'Conta criada!',
-            description: 'Bem-vindo ao ProspectPro!',
+            description: 'Bem-vindo ao Achei Leads!',
           });
           navigate('/');
         }
@@ -127,7 +127,7 @@ export default function Auth() {
             <Sparkles className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gradient">ProspectPro</h1>
+            <h1 className="text-2xl font-bold text-gradient">Achei Leads</h1>
           </div>
         </div>
 
