@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Building2, Phone, TrendingUp, Plus, Loader2, Download } from 'lucide-react';
 import { MetricCard } from '@/components/MetricCard';
 import { SearchForm } from '@/components/SearchForm';
@@ -32,6 +32,7 @@ interface DbCompany {
   linkedin: string | null;
   ai_summary: string | null;
   enriched_at: string | null;
+  crm_stage_id: string | null;
   company_phones: Array<{
     id: string;
     phone_number: string;
@@ -42,7 +43,15 @@ interface DbCompany {
 
 const SearchCompanies = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
+  const [filters, setFilters] = useState<SearchFilters>({
+    cnae: '',
+    city: '',
+    segment: '',
+    name: '',
+    enrichmentStatus: 'all',
+    crmStageId: '',
+    sortBy: 'newest',
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [showAddCompany, setShowAddCompany] = useState(false);
@@ -81,6 +90,7 @@ const SearchCompanies = () => {
         linkedin: c.linkedin || undefined,
         aiSummary: c.ai_summary || undefined,
         enrichedAt: c.enriched_at || undefined,
+        crmStageId: c.crm_stage_id || undefined,
         phones: c.company_phones.map((p) => ({
           id: p.id,
           number: p.phone_number,
@@ -91,7 +101,6 @@ const SearchCompanies = () => {
       }));
 
       setCompanies(mappedCompanies);
-      setFilteredCompanies(mappedCompanies);
       setMetrics(metricsData);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -105,27 +114,75 @@ const SearchCompanies = () => {
     }
   };
 
-  const handleSearch = (filters: SearchFilters) => {
+  // Filtered and sorted companies
+  const filteredCompanies = useMemo(() => {
     setIsSearching(true);
     
-    setTimeout(() => {
-      let filtered = [...companies];
+    let result = [...companies];
 
-      if (filters.cnae) {
-        filtered = filtered.filter((c) =>
-          c.cnae.toLowerCase().includes(filters.cnae.toLowerCase())
-        );
-      }
-      if (filters.city) {
-        filtered = filtered.filter((c) => c.city === filters.city);
-      }
-      if (filters.segment) {
-        filtered = filtered.filter((c) => c.segment === filters.segment);
-      }
+    // Filter by name
+    if (filters.name) {
+      result = result.filter((c) =>
+        c.name.toLowerCase().includes(filters.name.toLowerCase())
+      );
+    }
 
-      setFilteredCompanies(filtered);
-      setIsSearching(false);
-    }, 300);
+    // Filter by CNAE
+    if (filters.cnae) {
+      result = result.filter((c) =>
+        c.cnae.toLowerCase().includes(filters.cnae.toLowerCase())
+      );
+    }
+
+    // Filter by city
+    if (filters.city) {
+      result = result.filter((c) => c.city === filters.city);
+    }
+
+    // Filter by segment
+    if (filters.segment) {
+      result = result.filter((c) => c.segment === filters.segment);
+    }
+
+    // Filter by enrichment status
+    if (filters.enrichmentStatus === 'enriched') {
+      result = result.filter((c) => c.enrichedAt);
+    } else if (filters.enrichmentStatus === 'not_enriched') {
+      result = result.filter((c) => !c.enrichedAt);
+    }
+
+    // Filter by CRM stage
+    if (filters.crmStageId === 'none') {
+      result = result.filter((c) => !c.crmStageId);
+    } else if (filters.crmStageId) {
+      result = result.filter((c) => c.crmStageId === filters.crmStageId);
+    }
+
+    // Sort
+    switch (filters.sortBy) {
+      case 'oldest':
+        result.reverse();
+        break;
+      case 'name_asc':
+        result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'name_desc':
+        result.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 'city_asc':
+        result.sort((a, b) => a.city.localeCompare(b.city));
+        break;
+      default:
+        // 'newest' - already sorted by created_at desc from API
+        break;
+    }
+
+    setIsSearching(false);
+    return result;
+  }, [companies, filters]);
+
+  const handleSearch = (newFilters: SearchFilters) => {
+    setFilters(newFilters);
   };
 
   const handleCompanyAdded = () => {

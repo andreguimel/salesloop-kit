@@ -1,4 +1,4 @@
-import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle } from "lucide-react";
+import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +25,7 @@ const menuItems = [
   { title: "CRM", url: "/crm", icon: Target, showOverdue: true },
   { title: "Histórico", url: "/historico", icon: History },
   { title: "Relatórios", url: "/relatorios", icon: FileBarChart },
+  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 export function AppSidebar() {

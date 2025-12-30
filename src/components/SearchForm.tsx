@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, SlidersHorizontal, X, ArrowUpDown, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,39 +10,77 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SearchFilters } from '@/types';
+import { SearchFilters, PipelineStage } from '@/types';
 import { segments, cities } from '@/data/mockData';
+import { fetchPipelineStages } from '@/lib/crm-api';
 
 interface SearchFormProps {
   onSearch: (filters: SearchFilters) => void;
   isLoading?: boolean;
 }
 
+const defaultFilters: SearchFilters = {
+  cnae: '',
+  city: '',
+  segment: '',
+  name: '',
+  enrichmentStatus: 'all',
+  crmStageId: '',
+  sortBy: 'newest',
+};
+
 export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
-  const [filters, setFilters] = useState<SearchFilters>({
-    cnae: '',
-    city: '',
-    segment: '',
-  });
+  const [filters, setFilters] = useState<SearchFilters>(defaultFilters);
+  const [stages, setStages] = useState<PipelineStage[]>([]);
+
+  useEffect(() => {
+    loadStages();
+  }, []);
+
+  const loadStages = async () => {
+    try {
+      const data = await fetchPipelineStages();
+      setStages(data);
+    } catch (error) {
+      console.error('Error loading stages:', error);
+    }
+  };
 
   const handleSearch = () => {
     onSearch(filters);
   };
 
   const handleClear = () => {
-    setFilters({ cnae: '', city: '', segment: '' });
+    setFilters(defaultFilters);
+    onSearch(defaultFilters);
   };
 
-  const hasFilters = filters.cnae || filters.city || filters.segment;
+  const hasFilters = filters.cnae || filters.city || filters.segment || filters.name || 
+    filters.enrichmentStatus !== 'all' || filters.crmStageId || filters.sortBy !== 'newest';
 
   return (
-    <div className="p-4 md:p-5 rounded-xl border border-border/30 bg-secondary/30 animate-fade-up" style={{ animationDelay: '200ms' }}>
+    <div className="p-4 md:p-5 rounded-xl border border-border/30 bg-secondary/30 animate-fade-up space-y-4" style={{ animationDelay: '200ms' }}>
       <div className="flex items-center gap-2 mb-3 md:mb-4">
         <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
         <h3 className="text-sm font-medium text-muted-foreground">Filtrar resultados</h3>
       </div>
       
+      {/* Primary filters */}
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-2">
+          <Label htmlFor="name" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <Search className="h-3 w-3 inline mr-1" />
+            Nome da Empresa
+          </Label>
+          <Input
+            id="name"
+            placeholder="Buscar por nome..."
+            value={filters.name}
+            onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+            className="h-10 md:h-11 bg-secondary/50 border-border/50 focus:border-primary transition-colors"
+          />
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="cnae" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             CNAE
@@ -68,6 +106,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
+              <SelectItem value="">Todas</SelectItem>
               {cities.map((city) => (
                 <SelectItem key={city} value={city}>
                   {city}
@@ -89,6 +128,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
+              <SelectItem value="">Todos</SelectItem>
               {segments.map((segment) => (
                 <SelectItem key={segment} value={segment}>
                   {segment}
@@ -97,12 +137,91 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      {/* Secondary filters */}
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <Sparkles className="h-3 w-3 inline mr-1" />
+            Status Enriquecimento
+          </Label>
+          <Select
+            value={filters.enrichmentStatus}
+            onValueChange={(value: 'all' | 'enriched' | 'not_enriched') => 
+              setFilters({ ...filters, enrichmentStatus: value })
+            }
+          >
+            <SelectTrigger className="h-10 md:h-11 bg-secondary/50 border-border/50">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="enriched">Enriquecido</SelectItem>
+              <SelectItem value="not_enriched">Não enriquecido</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <Target className="h-3 w-3 inline mr-1" />
+            Estágio CRM
+          </Label>
+          <Select
+            value={filters.crmStageId}
+            onValueChange={(value) => setFilters({ ...filters, crmStageId: value })}
+          >
+            <SelectTrigger className="h-10 md:h-11 bg-secondary/50 border-border/50">
+              <SelectValue placeholder="Todos os estágios" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              <SelectItem value="">Todos os estágios</SelectItem>
+              <SelectItem value="none">Sem estágio</SelectItem>
+              {stages.map((stage) => (
+                <SelectItem key={stage.id} value={stage.id}>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: stage.color }}
+                    />
+                    {stage.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <ArrowUpDown className="h-3 w-3 inline mr-1" />
+            Ordenar por
+          </Label>
+          <Select
+            value={filters.sortBy}
+            onValueChange={(value: SearchFilters['sortBy']) => 
+              setFilters({ ...filters, sortBy: value })
+            }
+          >
+            <SelectTrigger className="h-10 md:h-11 bg-secondary/50 border-border/50">
+              <SelectValue placeholder="Mais recentes" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              <SelectItem value="newest">Mais recentes</SelectItem>
+              <SelectItem value="oldest">Mais antigos</SelectItem>
+              <SelectItem value="name_asc">Nome A-Z</SelectItem>
+              <SelectItem value="name_desc">Nome Z-A</SelectItem>
+              <SelectItem value="city_asc">Cidade A-Z</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="flex items-end gap-2">
           <Button 
             onClick={handleSearch} 
             variant="secondary"
-            className="flex-1 h-9 md:h-10 gap-2 text-sm"
+            className="flex-1 h-10 md:h-11 gap-2 text-sm"
             disabled={isLoading}
           >
             <Search className="h-4 w-4" />
@@ -113,7 +232,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
               variant="ghost" 
               size="icon"
               onClick={handleClear}
-              className="h-9 md:h-10 w-9 md:w-10 text-muted-foreground hover:text-foreground shrink-0"
+              className="h-10 md:h-11 w-10 md:w-11 text-muted-foreground hover:text-foreground shrink-0"
             >
               <X className="h-4 w-4" />
             </Button>
