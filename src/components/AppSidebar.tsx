@@ -1,4 +1,4 @@
-import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings, Moon, Sun, Coins } from "lucide-react";
+import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings, Moon, Sun, Coins, FileText } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -168,6 +168,19 @@ export function AppSidebar() {
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           {!collapsed && <span>{isDark ? "Tema Claro" : "Tema Escuro"}</span>}
         </Button>
+
+        {/* Terms of Use Link */}
+        <Link 
+          to="/termos-de-uso"
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors",
+            "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+            currentPath === "/termos-de-uso" && "bg-sidebar-accent text-sidebar-foreground"
+          )}
+        >
+          <FileText className="h-4 w-4" />
+          {!collapsed && <span>Termos de Uso</span>}
+        </Link>
 
         {!collapsed && user && (
           <div className="px-2">
