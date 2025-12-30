@@ -158,16 +158,41 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4 bg-sidebar space-y-2">
-        {/* Theme Toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
+        {/* Theme Toggle Switch */}
+        <div 
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors",
+            "hover:bg-sidebar-accent"
+          )}
           onClick={() => setTheme(isDark ? "light" : "dark")}
-          className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
         >
-          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          {!collapsed && <span>{isDark ? "Tema Claro" : "Tema Escuro"}</span>}
-        </Button>
+          <div className="relative">
+            {/* Toggle Track */}
+            <div className={cn(
+              "w-11 h-6 rounded-full transition-colors duration-300",
+              isDark ? "bg-primary/30" : "bg-amber-500/30"
+            )}>
+              {/* Toggle Thumb with Icon */}
+              <div className={cn(
+                "absolute top-0.5 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 shadow-md",
+                isDark 
+                  ? "left-[22px] bg-primary" 
+                  : "left-0.5 bg-amber-500"
+              )}>
+                {isDark ? (
+                  <Moon className="h-3 w-3 text-primary-foreground" />
+                ) : (
+                  <Sun className="h-3 w-3 text-white" />
+                )}
+              </div>
+            </div>
+          </div>
+          {!collapsed && (
+            <span className="text-sm text-sidebar-foreground/70">
+              {isDark ? "Tema Escuro" : "Tema Claro"}
+            </span>
+          )}
+        </div>
 
         {/* Terms and Privacy Links */}
         <div className="flex flex-col gap-1">
