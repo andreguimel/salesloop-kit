@@ -14,6 +14,7 @@ import History from "./pages/History";
 import Reports from "./pages/Reports";
 import CRM from "./pages/CRM";
 import Settings from "./pages/Settings";
+import Credits from "./pages/Credits";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -75,6 +76,13 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Settings />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/creditos" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Credits />
                   </AppLayout>
                 </ProtectedRoute>
               } />
