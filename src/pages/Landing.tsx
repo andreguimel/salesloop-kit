@@ -354,9 +354,9 @@ const Landing = () => {
                 </Button>
               </div>
 
-              {/* Results Section - Fixed height to prevent layout shift */}
-              <div className="border-t border-border/50 h-[480px] overflow-hidden">
-                <div className={`p-6 transition-all duration-500 ${showResults ? 'opacity-100' : 'opacity-0'}`}>
+              {/* Results Section - Always visible, items animate */}
+              <div className="border-t border-border/50">
+                <div className="p-6">
                   {/* Results Header */}
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-sm text-muted-foreground">
@@ -410,7 +410,7 @@ const Landing = () => {
                     ))}
                   </div>
 
-                  {/* Unlock CTA */}
+                  {/* Unlock CTA - Always visible */}
                   <div className="mt-6 p-4 rounded-xl bg-primary/10 border border-primary/20 text-center">
                     <p className="text-sm mb-3">
                       <Lock className="h-4 w-4 inline mr-1" />
