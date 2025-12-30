@@ -526,6 +526,14 @@ const CompanyDetails = () => {
 
             {/* Digital Contacts */}
             <div className="space-y-3">
+              {!company.website && !company.email && !company.instagram && !company.facebook && !company.linkedin && (
+                <p className="text-sm text-muted-foreground">
+                  {company.enrichedAt 
+                    ? 'Nenhum contato digital encontrado pela IA' 
+                    : 'Clique em "Buscar com IA" para encontrar contatos'}
+                </p>
+              )}
+              
               {company.website && (
                 <a 
                   href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
