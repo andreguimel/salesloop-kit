@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, Loader2, Building2, Phone, MapPin, Plus, Check, ChevronsUpDown, Coins } from 'lucide-react';
+import { Search, Loader2, Building2, Phone, MapPin, Plus, Check, ChevronsUpDown, Coins, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,6 +15,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { fetchCnaes, Cnae } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useCredits } from '@/hooks/useCredits';
+import { maskName, maskCnpj, maskPhone } from '@/lib/mask-utils';
 interface SearchResult {
   cnpj?: string;
   nome?: string;
@@ -533,12 +534,13 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <Building2 className="h-4 w-4 text-primary shrink-0" />
-                              <span className="font-medium truncate">{name}</span>
+                              <span className="font-medium truncate">{maskName(name)}</span>
                               {result.cnpj && (
                                 <Badge variant="outline" className="text-xs font-mono">
-                                  {result.cnpj}
+                                  {maskCnpj(result.cnpj)}
                                 </Badge>
                               )}
+                              <Lock className="h-3 w-3 text-muted-foreground" />
                             </div>
                             {endereco && (
                               <div className="flex items-start gap-1 mt-1 text-sm text-muted-foreground">
@@ -549,7 +551,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                             {contatos && (
                               <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
                                 <Phone className="h-3 w-3 shrink-0" />
-                                <span>{contatos}</span>
+                                <span>{maskPhone(contatos)}</span>
                               </div>
                             )}
                           </div>

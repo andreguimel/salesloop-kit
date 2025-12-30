@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Building2, MapPin, Phone, Mail, Loader2, Download, CheckCircle, Coins } from 'lucide-react';
+import { Search, Building2, MapPin, Phone, Mail, Loader2, Download, CheckCircle, Coins, Lock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { importCompanyFromSearch, SearchCompanyResult } from '@/lib/api';
 import { useCredits } from '@/hooks/useCredits';
+import { maskName, maskCnpj, maskPhone, maskEmail } from '@/lib/mask-utils';
 
 interface SearchByCepDialogProps {
   open: boolean;
@@ -265,18 +266,19 @@ export function SearchByCepDialog({ open, onOpenChange, onCompanyImported }: Sea
                           <div className="flex items-center gap-2 mb-1">
                             <Building2 className="h-4 w-4 text-primary shrink-0" />
                             <span className="font-medium truncate">
-                              {company.fantasyName || company.name}
+                              {maskName(company.fantasyName || company.name)}
                             </span>
+                            <Lock className="h-3 w-3 text-muted-foreground" />
                           </div>
                           
                           {company.fantasyName && company.name !== company.fantasyName && (
                             <p className="text-sm text-muted-foreground ml-6 truncate">
-                              {company.name}
+                              {maskName(company.name)}
                             </p>
                           )}
                           
                           <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                            <p className="ml-6">CNPJ: {company.cnpj}</p>
+                            <p className="ml-6">CNPJ: {maskCnpj(company.cnpj)}</p>
                             
                             {company.address && (
                               <div className="flex items-center gap-2 ml-6">
@@ -291,8 +293,8 @@ export function SearchByCepDialog({ open, onOpenChange, onCompanyImported }: Sea
                               <div className="flex items-center gap-2 ml-6">
                                 <Phone className="h-3 w-3 shrink-0" />
                                 <span>
-                                  {formatPhone(company.phone1)}
-                                  {company.phone2 && ` / ${formatPhone(company.phone2)}`}
+                                  {maskPhone(company.phone1)}
+                                  {company.phone2 && ` / ${maskPhone(company.phone2)}`}
                                 </span>
                               </div>
                             )}
@@ -300,7 +302,7 @@ export function SearchByCepDialog({ open, onOpenChange, onCompanyImported }: Sea
                             {company.email && (
                               <div className="flex items-center gap-2 ml-6">
                                 <Mail className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{company.email}</span>
+                                <span className="truncate">{maskEmail(company.email)}</span>
                               </div>
                             )}
 
