@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
 const signInSchema = z.object({
@@ -17,8 +18,13 @@ const signUpSchema = signInSchema.extend({
   fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
 });
 
+const resetPasswordSchema = z.object({
+  email: z.string().email('Email inválido'),
+});
+
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -31,7 +37,9 @@ export default function Auth() {
 
   const validateForm = () => {
     try {
-      if (isSignUp) {
+      if (isResetPassword) {
+        resetPasswordSchema.parse({ email });
+      } else if (isSignUp) {
         signUpSchema.parse({ email, password, fullName });
       } else {
         signInSchema.parse({ email, password });
@@ -52,8 +60,40 @@ export default function Auth() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!validateForm()) return;
+    
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Email enviado!',
+        description: 'Verifique sua caixa de entrada para redefinir sua senha.',
+      });
+      setIsResetPassword(false);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao enviar email',
+        description: error.message || 'Não foi possível enviar o email de recuperação.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isResetPassword) {
+      await handleResetPassword();
+      return;
+    }
     
     if (!validateForm()) return;
     
@@ -134,18 +174,37 @@ export default function Auth() {
         {/* Auth Card */}
         <div className="glass rounded-2xl p-8 animate-fade-up" style={{ animationDelay: '100ms' }}>
           <div className="text-center mb-8">
+            {isResetPassword && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResetPassword(false);
+                  setErrors({});
+                }}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar
+              </button>
+            )}
             <h2 className="text-2xl font-bold mb-2">
-              {isSignUp ? 'Criar Conta' : 'Entrar'}
+              {isResetPassword 
+                ? 'Recuperar Senha' 
+                : isSignUp 
+                  ? 'Criar Conta' 
+                  : 'Entrar'}
             </h2>
             <p className="text-muted-foreground">
-              {isSignUp 
-                ? 'Comece a prospectar clientes hoje' 
-                : 'Acesse sua conta para continuar'}
+              {isResetPassword
+                ? 'Digite seu email para receber o link de recuperação'
+                : isSignUp 
+                  ? 'Comece a prospectar clientes hoje' 
+                  : 'Acesse sua conta para continuar'}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {isSignUp && (
+            {isSignUp && !isResetPassword && (
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Nome Completo
@@ -187,25 +246,42 @@ export default function Auth() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Senha
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 h-11 bg-secondary/50 border-border/50"
-                />
+            {!isResetPassword && (
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Senha
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 h-11 bg-secondary/50 border-border/50"
+                  />
+                </div>
+                {errors.password && (
+                  <p className="text-xs text-destructive">{errors.password}</p>
+                )}
               </div>
-              {errors.password && (
-                <p className="text-xs text-destructive">{errors.password}</p>
-              )}
-            </div>
+            )}
+
+            {!isSignUp && !isResetPassword && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsResetPassword(true);
+                    setErrors({});
+                  }}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Esqueceu sua senha?
+                </button>
+              </div>
+            )}
 
             <Button
               type="submit"
@@ -216,27 +292,33 @@ export default function Auth() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  {isSignUp ? 'Criar Conta' : 'Entrar'}
+                  {isResetPassword 
+                    ? 'Enviar Email' 
+                    : isSignUp 
+                      ? 'Criar Conta' 
+                      : 'Entrar'}
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setErrors({});
-              }}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isSignUp 
-                ? 'Já tem uma conta? Entrar' 
-                : 'Não tem uma conta? Criar conta'}
-            </button>
-          </div>
+          {!isResetPassword && (
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setErrors({});
+                }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {isSignUp 
+                  ? 'Já tem uma conta? Entrar' 
+                  : 'Não tem uma conta? Criar conta'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
