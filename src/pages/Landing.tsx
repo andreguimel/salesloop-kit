@@ -29,12 +29,12 @@ const Landing = () => {
     {
       icon: Search,
       title: 'Busca por CNAE',
-      description: 'Encontre empresas por código CNAE, atividade econômica, CNPJ, CEP ou Google Maps.',
+      description: 'Encontre empresas por código CNAE ou atividade econômica.',
     },
     {
       icon: Target,
       title: 'Leads Qualificados',
-      description: 'Acesse informações completas: telefones, e-mails, redes sociais e endereço comercial.',
+      description: 'Acesse informações disponíveis: telefones, e-mails, redes sociais e endereço comercial.',
     },
     {
       icon: Zap,
