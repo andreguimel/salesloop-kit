@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
-import { MapPin, Building2, RefreshCw, CheckCircle, Phone, Trash2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Building2, RefreshCw, CheckCircle, Phone, Trash2, Loader2, ChevronLeft, ChevronRight, Sparkles, Globe, Mail, Instagram, Facebook, Linkedin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { PhoneStatusBadge } from './PhoneStatusBadge';
 import { Company } from '@/types';
-import { validatePhones, deleteCompany } from '@/lib/api';
+import { validatePhones, deleteCompany, enrichCompany, enrichCompanies } from '@/lib/api';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -24,11 +26,14 @@ interface CompanyTableProps {
   companies: Company[];
   onPhonesValidated?: () => void;
   onCompanyDeleted?: () => void;
+  onCompanyEnriched?: () => void;
 }
 
-export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }: CompanyTableProps) {
+export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, onCompanyEnriched }: CompanyTableProps) {
   const [validatingCompanyId, setValidatingCompanyId] = useState<string | null>(null);
   const [deletingCompanyId, setDeletingCompanyId] = useState<string | null>(null);
+  const [enrichingCompanyId, setEnrichingCompanyId] = useState<string | null>(null);
+  const [isEnrichingSelected, setIsEnrichingSelected] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [isValidatingAll, setIsValidatingAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -49,6 +54,14 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
       c.phones.filter(p => p.status === 'pending' && p.id).map(p => p.id!)
     );
   }, [companies]);
+
+  const selectedCompanies = useMemo(() => {
+    return companies.filter(c => selectedIds.has(c.id));
+  }, [companies, selectedIds]);
+
+  const notEnrichedSelectedCount = useMemo(() => {
+    return selectedCompanies.filter(c => !c.enrichedAt).length;
+  }, [selectedCompanies]);
 
   const handleValidatePhones = async (company: Company) => {
     const pendingPhones = company.phones.filter(p => p.status === 'pending' && p.id);
@@ -106,6 +119,62 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
       });
     } finally {
       setIsValidatingAll(false);
+    }
+  };
+
+  const handleEnrichCompany = async (company: Company) => {
+    if (company.enrichedAt) {
+      toast.info('Esta empresa já foi enriquecida');
+      return;
+    }
+
+    setEnrichingCompanyId(company.id);
+    
+    try {
+      await enrichCompany(company);
+      toast.success('Empresa enriquecida com sucesso!', {
+        description: 'Dados adicionais foram encontrados e salvos',
+      });
+      onCompanyEnriched?.();
+    } catch (error) {
+      console.error('Error enriching company:', error);
+      toast.error('Erro ao enriquecer empresa', {
+        description: error instanceof Error ? error.message : 'Tente novamente'
+      });
+    } finally {
+      setEnrichingCompanyId(null);
+    }
+  };
+
+  const handleEnrichSelectedCompanies = async () => {
+    const companiesToEnrich = selectedCompanies.filter(c => !c.enrichedAt);
+    
+    if (companiesToEnrich.length === 0) {
+      toast.info('Todas as empresas selecionadas já foram enriquecidas');
+      return;
+    }
+
+    setIsEnrichingSelected(true);
+    
+    try {
+      const result = await enrichCompanies(companiesToEnrich);
+      
+      if (result.success > 0) {
+        toast.success(`${result.success} empresa${result.success > 1 ? 's' : ''} enriquecida${result.success > 1 ? 's' : ''}!`);
+      }
+      if (result.failed > 0) {
+        toast.error(`Falha ao enriquecer ${result.failed} empresa${result.failed > 1 ? 's' : ''}`);
+      }
+      
+      onCompanyEnriched?.();
+    } catch (error) {
+      console.error('Error enriching companies:', error);
+      toast.error('Erro ao enriquecer empresas', {
+        description: error instanceof Error ? error.message : 'Tente novamente'
+      });
+    } finally {
+      setIsEnrichingSelected(false);
+      setSelectedIds(new Set());
     }
   };
 
@@ -239,21 +308,46 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {selectedIds.size > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowBulkDeleteDialog(true)}
-              disabled={isDeleting}
-              className="gap-2 text-xs font-medium"
-            >
-              {isDeleting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5" />
+            <>
+              {notEnrichedSelectedCount > 0 && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleEnrichSelectedCompanies}
+                  disabled={isEnrichingSelected}
+                  className="gap-2 text-xs font-medium"
+                >
+                  {isEnrichingSelected ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span className="hidden sm:inline">Enriquecendo...</span>
+                      <span className="sm:hidden">IA...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Buscar com IA ({notEnrichedSelectedCount})</span>
+                      <span className="sm:hidden">IA ({notEnrichedSelectedCount})</span>
+                    </>
+                  )}
+                </Button>
               )}
-              <span className="hidden sm:inline">Excluir selecionadas ({selectedIds.size})</span>
-              <span className="sm:hidden">Excluir ({selectedIds.size})</span>
-            </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowBulkDeleteDialog(true)}
+                disabled={isDeleting}
+                className="gap-2 text-xs font-medium"
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">Excluir ({selectedIds.size})</span>
+                <span className="sm:hidden">Excluir ({selectedIds.size})</span>
+              </Button>
+            </>
           )}
           {allPendingPhoneIds.length > 0 && (
             <Button
@@ -477,6 +571,75 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
                 </td>
                 <td className="px-5 py-4 text-right">
                   <div className="flex flex-col gap-1.5 items-end">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant={company.enrichedAt ? "ghost" : "default"}
+                            size="sm"
+                            onClick={() => handleEnrichCompany(company)}
+                            disabled={enrichingCompanyId === company.id || !!company.enrichedAt}
+                            className={`text-xs font-medium gap-1.5 ${company.enrichedAt ? 'text-muted-foreground' : ''}`}
+                          >
+                            {enrichingCompanyId === company.id ? (
+                              <>
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                Buscando...
+                              </>
+                            ) : company.enrichedAt ? (
+                              <>
+                                <CheckCircle className="h-3 w-3 text-green-500" />
+                                Enriquecido
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-3 w-3" />
+                                Buscar com IA
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        {company.enrichedAt && (
+                          <TooltipContent>
+                            <div className="space-y-1 text-xs">
+                              {company.website && (
+                                <div className="flex items-center gap-1">
+                                  <Globe className="h-3 w-3" />
+                                  <a href={company.website} target="_blank" rel="noopener noreferrer" className="hover:underline">{company.website}</a>
+                                </div>
+                              )}
+                              {company.email && (
+                                <div className="flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  <a href={`mailto:${company.email}`} className="hover:underline">{company.email}</a>
+                                </div>
+                              )}
+                              {company.instagram && (
+                                <div className="flex items-center gap-1">
+                                  <Instagram className="h-3 w-3" />
+                                  {company.instagram}
+                                </div>
+                              )}
+                              {company.facebook && (
+                                <div className="flex items-center gap-1">
+                                  <Facebook className="h-3 w-3" />
+                                  {company.facebook}
+                                </div>
+                              )}
+                              {company.linkedin && (
+                                <div className="flex items-center gap-1">
+                                  <Linkedin className="h-3 w-3" />
+                                  {company.linkedin}
+                                </div>
+                              )}
+                              {company.aiSummary && (
+                                <p className="mt-1 max-w-xs">{company.aiSummary}</p>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                     {company.phones.some(p => p.status === 'pending') && (
                       <Button
                         variant="outline"

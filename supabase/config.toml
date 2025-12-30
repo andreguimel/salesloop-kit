@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.search-cnpja]
 verify_jwt = false
+
+[functions.enrich-company]
+verify_jwt = false
