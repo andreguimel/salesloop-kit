@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Building2, MapPin, Phone as PhoneIcon, Loader2, Plus, Check, Info } from 'lucide-react';
+import { Search, Building2, MapPin, Phone as PhoneIcon, Loader2, Plus, Check, Info, Coins, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { searchCompanyByCnpj, importCompanyFromSearch, SearchCompanyResult } from '@/lib/api';
+import { useCredits } from '@/hooks/useCredits';
+import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 interface SearchByCnpjDialogProps {
   open: boolean;
@@ -51,6 +55,7 @@ export function SearchByCnpjDialog({ open, onOpenChange, onCompanyImported }: Se
   const [imported, setImported] = useState(false);
   
   const { toast } = useToast();
+  const { balance, hasCredits, consumeCredits, isCritical, isLow } = useCredits();
 
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCnpj(e.target.value);
@@ -98,14 +103,28 @@ export function SearchByCnpjDialog({ open, onOpenChange, onCompanyImported }: Se
   const handleImport = async () => {
     if (!result) return;
     
+    // Check credits
+    if (!hasCredits) {
+      toast({
+        title: 'Sem créditos',
+        description: 'Você precisa de créditos para importar empresas.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setImporting(true);
 
     try {
       await importCompanyFromSearch(result);
+      
+      // Consume 1 credit
+      await consumeCredits(1, `Importação: ${result.fantasyName || result.name}`, result.cnpj);
+      
       setImported(true);
       toast({
         title: 'Empresa importada!',
-        description: `${result.fantasyName || result.name} foi adicionada à sua lista.`,
+        description: `${result.fantasyName || result.name} foi adicionada. 1 crédito consumido.`,
       });
       onCompanyImported();
     } catch (error) {
