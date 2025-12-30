@@ -15,6 +15,7 @@ export function ProfileSection() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [cpf, setCpf] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -41,7 +42,7 @@ export function ProfileSection() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, phone')
+        .select('full_name, phone, cpf')
         .eq('id', user.id)
         .single();
 
@@ -52,6 +53,7 @@ export function ProfileSection() {
       if (data) {
         setFullName(data.full_name || '');
         setPhone(data.phone || '');
+        setCpf(data.cpf || '');
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -72,6 +74,7 @@ export function ProfileSection() {
           full_name: fullName,
           email: email,
           phone: phone,
+          cpf: cpf,
         });
 
       if (error) throw error;
@@ -201,6 +204,20 @@ export function ProfileSection() {
             </div>
             <p className="text-xs text-muted-foreground">
               Usado para pagamentos via PIX
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cpf">CPF (apenas números)</Label>
+            <Input
+              id="cpf"
+              value={cpf}
+              onChange={(e) => setCpf(e.target.value.replace(/\D/g, ''))}
+              placeholder="00000000000"
+              disabled={isLoading}
+              maxLength={11}
+            />
+            <p className="text-xs text-muted-foreground">
+              Obrigatório para pagamentos via PIX
             </p>
           </div>
           <Button 
