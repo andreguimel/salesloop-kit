@@ -95,30 +95,30 @@ const History = () => {
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-8">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-64 md:w-96 h-64 md:h-96 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
       {/* Header */}
-      <div className="space-y-3 animate-fade-up">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+      <div className="space-y-2 animate-fade-up">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">
           Histórico
         </h1>
-        <p className="text-muted-foreground max-w-xl">
+        <p className="text-sm md:text-base text-muted-foreground max-w-xl">
           Acompanhe as atividades recentes da sua prospecção.
         </p>
       </div>
 
       {/* History List */}
       <div className="rounded-2xl glass overflow-hidden animate-fade-up" style={{ animationDelay: '100ms' }}>
-        <div className="p-5 border-b border-border/50 flex items-center gap-3">
+        <div className="p-4 md:p-5 border-b border-border/50 flex items-center gap-3">
           <div className="p-2 rounded-lg gradient-primary">
             <HistoryIcon className="h-4 w-4 text-primary-foreground" />
           </div>
-          <h3 className="text-lg font-semibold">Atividades Recentes</h3>
+          <h3 className="text-base md:text-lg font-semibold">Atividades Recentes</h3>
         </div>
 
         {history.length === 0 ? (
@@ -131,26 +131,26 @@ const History = () => {
             {history.map((item, index) => (
               <div 
                 key={item.id}
-                className="p-4 hover:bg-secondary/20 transition-colors animate-fade-up"
+                className="p-3 md:p-4 hover:bg-secondary/20 transition-colors animate-fade-up"
                 style={{ animationDelay: `${150 + index * 30}ms` }}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-secondary mt-0.5">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="p-2 rounded-lg bg-secondary mt-0.5 shrink-0 hidden sm:block">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <div>
-                      <p className="font-medium">{item.company_name}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{item.company_name}</p>
                       <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                        <Phone className="h-3.5 w-3.5" />
-                        <span className="font-mono">{formatPhone(item.phone_number)}</span>
+                        <Phone className="h-3.5 w-3.5 shrink-0" />
+                        <span className="font-mono text-xs sm:text-sm">{formatPhone(item.phone_number)}</span>
                       </div>
                       <Badge variant="secondary" className="mt-2 text-xs">
                         {item.action}
                       </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap pl-0 sm:pl-0">
                     <Calendar className="h-3.5 w-3.5" />
                     {formatDate(item.created_at)}
                   </div>

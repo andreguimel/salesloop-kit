@@ -91,25 +91,25 @@ const Reports = () => {
     .slice(0, 5);
 
   return (
-    <div className="p-6 md:p-8 space-y-8">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-64 md:w-96 h-64 md:h-96 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
       {/* Header */}
-      <div className="space-y-3 animate-fade-up">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+      <div className="space-y-2 animate-fade-up">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">
           Relatórios
         </h1>
-        <p className="text-muted-foreground max-w-xl">
+        <p className="text-sm md:text-base text-muted-foreground max-w-xl">
           Análise detalhada da sua base de prospecção.
         </p>
       </div>
 
       {/* Overview Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-fade-up" style={{ animationDelay: '100ms' }}>
+      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4 animate-fade-up" style={{ animationDelay: '100ms' }}>
         <Card className="glass border-border/50">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
