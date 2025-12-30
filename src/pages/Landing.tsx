@@ -28,8 +28,8 @@ const Landing = () => {
   const features = [
     {
       icon: Search,
-      title: 'Busca Inteligente',
-      description: 'Encontre empresas por CNPJ, CNAE, CEP ou até pelo Google Maps. Dados sempre atualizados.',
+      title: 'Busca por CNAE',
+      description: 'Encontre empresas por código CNAE, atividade econômica, CNPJ, CEP ou Google Maps.',
     },
     {
       icon: Target,
@@ -49,11 +49,11 @@ const Landing = () => {
   ];
 
   const mockLeads = [
-    { name: 'Tech Solutions Ltda', segment: 'Tecnologia', city: 'São Paulo', phone: '(11) 9****-4567', email: 'contato@tech***.com.br' },
-    { name: 'Construtora Horizonte', segment: 'Construção Civil', city: 'Rio de Janeiro', phone: '(21) 9****-8901', email: 'comercial@horiz***.com.br' },
-    { name: 'Clínica Saúde Total', segment: 'Saúde', city: 'Belo Horizonte', phone: '(31) 9****-2345', email: 'atendimento@sau***.com.br' },
-    { name: 'Restaurante Sabor & Arte', segment: 'Alimentação', city: 'Curitiba', phone: '(41) 9****-6789', email: 'reservas@sabo***.com.br' },
-    { name: 'Academia Fitness Pro', segment: 'Saúde e Fitness', city: 'Porto Alegre', phone: '(51) 9****-0123', email: 'info@fitne***.com.br' },
+    { name: 'Tech Solutions Ltda', cnae: '6201-5/00', activity: 'Desenvolvimento de programas', city: 'São Paulo', phone: '(11) 9****-4567', email: 'contato@tech***.com.br' },
+    { name: 'Construtora Horizonte', cnae: '4120-4/00', activity: 'Construção de edifícios', city: 'Rio de Janeiro', phone: '(21) 9****-8901', email: 'comercial@horiz***.com.br' },
+    { name: 'Clínica Saúde Total', cnae: '8630-5/01', activity: 'Atividade médica ambulatorial', city: 'Belo Horizonte', phone: '(31) 9****-2345', email: 'atendimento@sau***.com.br' },
+    { name: 'Restaurante Sabor & Arte', cnae: '5611-2/01', activity: 'Restaurantes e similares', city: 'Curitiba', phone: '(41) 9****-6789', email: 'reservas@sabo***.com.br' },
+    { name: 'Academia Fitness Pro', cnae: '9313-1/00', activity: 'Atividades de condicionamento físico', city: 'Porto Alegre', phone: '(51) 9****-0123', email: 'info@fitne***.com.br' },
   ];
 
   // Pacotes reais do sistema
@@ -285,9 +285,9 @@ const Landing = () => {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <input 
                       type="text" 
-                      placeholder="Buscar empresas por segmento, cidade ou CNAE..."
+                      placeholder="Buscar por CNAE, atividade econômica ou cidade..."
                       className="w-full pl-12 pr-4 py-3 rounded-xl bg-secondary/50 border border-border/50 focus:outline-none focus:border-primary/50 transition-colors"
-                      defaultValue="Restaurantes em São Paulo"
+                      defaultValue="5611-2/01 - Restaurantes em São Paulo"
                     />
                   </div>
                   <Button className="gradient-primary border-0 px-8">
@@ -323,7 +323,8 @@ const Landing = () => {
                           <div>
                             <h4 className="font-semibold group-hover:text-primary transition-colors">{lead.name}</h4>
                             <div className="flex flex-wrap gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs">{lead.segment}</Badge>
+                              <Badge variant="outline" className="text-xs font-mono">{lead.cnae}</Badge>
+                              <span className="text-xs text-muted-foreground">{lead.activity}</span>
                               <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <MapPin className="h-3 w-3" />
                                 {lead.city}
