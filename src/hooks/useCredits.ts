@@ -141,7 +141,19 @@ export function useCredits() {
     }
   }, [user, balance]);
 
-  const createCheckout = useCallback(async (packageId: string): Promise<{ success: boolean; url?: string; error?: string }> => {
+  interface CheckoutResult {
+    success: boolean;
+    error?: string;
+    pixId?: string;
+    brCode?: string;
+    brCodeBase64?: string;
+    amount?: number;
+    expiresAt?: string;
+    packageName?: string;
+    totalCredits?: number;
+  }
+
+  const createCheckout = useCallback(async (packageId: string): Promise<CheckoutResult> => {
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { packageId },
@@ -156,7 +168,16 @@ export function useCredits() {
         return { success: false, error: data.error };
       }
 
-      return { success: true, url: data.url };
+      return { 
+        success: true, 
+        pixId: data.pixId,
+        brCode: data.brCode,
+        brCodeBase64: data.brCodeBase64,
+        amount: data.amount,
+        expiresAt: data.expiresAt,
+        packageName: data.packageName,
+        totalCredits: data.totalCredits,
+      };
     } catch (error) {
       console.error('Checkout error:', error);
       return { success: false, error: 'Erro ao criar checkout' };
