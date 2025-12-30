@@ -1,4 +1,4 @@
-import { LayoutDashboard, Search, History, FileBarChart, LogOut } from "lucide-react";
+import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Buscar Empresas", url: "/buscar", icon: Search },
+  { title: "CRM", url: "/crm", icon: Target },
   { title: "Histórico", url: "/historico", icon: History },
   { title: "Relatórios", url: "/relatorios", icon: FileBarChart },
 ];

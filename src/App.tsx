@@ -11,6 +11,7 @@ import SearchCompanies from "./pages/SearchCompanies";
 import CompanyDetails from "./pages/CompanyDetails";
 import History from "./pages/History";
 import Reports from "./pages/Reports";
+import CRM from "./pages/CRM";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -57,6 +58,13 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Reports />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/crm" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <CRM />
                 </AppLayout>
               </ProtectedRoute>
             } />

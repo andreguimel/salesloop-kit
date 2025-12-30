@@ -24,8 +24,12 @@ export type Database = {
           cnae_description: string | null
           cnpj: string | null
           created_at: string
+          crm_notes: string | null
+          crm_stage_id: string | null
+          deal_value: number | null
           email: string | null
           enriched_at: string | null
+          expected_close_date: string | null
           facebook: string | null
           id: string
           instagram: string | null
@@ -46,8 +50,12 @@ export type Database = {
           cnae_description?: string | null
           cnpj?: string | null
           created_at?: string
+          crm_notes?: string | null
+          crm_stage_id?: string | null
+          deal_value?: number | null
           email?: string | null
           enriched_at?: string | null
+          expected_close_date?: string | null
           facebook?: string | null
           id?: string
           instagram?: string | null
@@ -68,8 +76,12 @@ export type Database = {
           cnae_description?: string | null
           cnpj?: string | null
           created_at?: string
+          crm_notes?: string | null
+          crm_stage_id?: string | null
+          deal_value?: number | null
           email?: string | null
           enriched_at?: string | null
+          expected_close_date?: string | null
           facebook?: string | null
           id?: string
           instagram?: string | null
@@ -81,7 +93,15 @@ export type Database = {
           user_id?: string
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "companies_crm_stage_id_fkey"
+            columns: ["crm_stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_phones: {
         Row: {
@@ -117,6 +137,86 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_activities: {
+        Row: {
+          activity_type: string
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          is_completed: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_type?: string
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pipeline_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       message_history: {
         Row: {
