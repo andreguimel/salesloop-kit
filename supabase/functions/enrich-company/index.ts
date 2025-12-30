@@ -60,8 +60,8 @@ serve(async (req) => {
       );
     }
 
-    // Step 1: Search with Firecrawl
-    const searchQuery = `${company.name} ${company.city} ${company.state} contato site telefone`;
+    // Step 1: Search with Firecrawl - busca principal
+    const searchQuery = `"${company.name}" ${company.city} ${company.state} site oficial contato email`;
     console.log('Firecrawl search query:', searchQuery);
 
     const firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/search', {
@@ -72,9 +72,9 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         query: searchQuery,
-        limit: 5,
+        limit: 8,
         scrapeOptions: {
-          formats: ['markdown'],
+          formats: ['markdown', 'links'],
         },
       }),
     });
@@ -91,35 +91,68 @@ serve(async (req) => {
     const firecrawlData = await firecrawlResponse.json();
     console.log('Firecrawl results count:', firecrawlData.data?.length || 0);
 
+    // Step 1.5: Search for social media profiles
+    const socialSearchQuery = `"${company.name}" ${company.city} instagram facebook linkedin`;
+    console.log('Social media search query:', socialSearchQuery);
+
+    const socialResponse = await fetch('https://api.firecrawl.dev/v1/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: socialSearchQuery,
+        limit: 5,
+        scrapeOptions: {
+          formats: ['markdown', 'links'],
+        },
+      }),
+    });
+
+    let socialData: any = { data: [] };
+    if (socialResponse.ok) {
+      socialData = await socialResponse.json();
+      console.log('Social media results count:', socialData.data?.length || 0);
+    }
+
+    // Combine all search results
+    const allResults = [...(firecrawlData.data || []), ...(socialData.data || [])];
+
     // Combine search results for AI processing
-    const searchContent = firecrawlData.data?.map((result: any) => {
-      return `URL: ${result.url}\nTítulo: ${result.title || 'N/A'}\nConteúdo: ${result.markdown?.slice(0, 1500) || result.description || 'N/A'}`;
+    const searchContent = allResults.map((result: any) => {
+      const links = result.links?.slice(0, 10)?.join('\n') || '';
+      return `URL: ${result.url}\nTítulo: ${result.title || 'N/A'}\nLinks encontrados:\n${links}\nConteúdo: ${result.markdown?.slice(0, 2000) || result.description || 'N/A'}`;
     }).join('\n\n---\n\n') || 'Nenhum resultado encontrado';
 
     // Step 2: Process with Lovable AI to extract structured data
     const aiPrompt = `Analise os resultados de busca abaixo sobre a empresa "${company.name}" localizada em ${company.city}, ${company.state}.
 
 Extraia as seguintes informações (se encontradas):
-1. Website oficial da empresa
-2. Email de contato
-3. Instagram (@usuario)
-4. Facebook (URL ou @usuario)
-5. LinkedIn (URL)
+1. Website oficial da empresa (URL completa)
+2. Email de contato REAL e COMPLETO (sem asteriscos ou mascaramento)
+3. Instagram (URL completa ou @usuario)
+4. Facebook (URL completa)
+5. LinkedIn (URL completa)
 6. Um breve resumo sobre a empresa (máximo 150 palavras)
 
-IMPORTANTE: 
-- Retorne APENAS um JSON válido, sem markdown ou texto adicional
+REGRAS IMPORTANTES: 
+- Retorne APENAS um JSON válido, sem markdown, sem blocos de código, sem texto adicional
 - Se não encontrar uma informação, use null
-- Para redes sociais, inclua apenas se for da própria empresa
+- IGNORE emails mascarados com asteriscos (***) ou parciais - retorne null nesses casos
+- Para redes sociais, procure nos links e no conteúdo - inclua apenas perfis oficiais da empresa
+- URLs de Instagram devem começar com https://instagram.com/ ou https://www.instagram.com/
+- URLs de Facebook devem começar com https://facebook.com/ ou https://www.facebook.com/
+- URLs de LinkedIn devem começar com https://linkedin.com/ ou https://www.linkedin.com/
 - Valide que os dados são realmente da empresa "${company.name}"
 
-Formato de resposta (JSON):
+Formato de resposta (apenas o JSON, nada mais):
 {
   "website": "https://...",
   "email": "contato@...",
-  "instagram": "@...",
-  "facebook": "https://... ou @...",
-  "linkedin": "https://...",
+  "instagram": "https://instagram.com/...",
+  "facebook": "https://facebook.com/...",
+  "linkedin": "https://linkedin.com/...",
   "summary": "Resumo sobre a empresa..."
 }
 
