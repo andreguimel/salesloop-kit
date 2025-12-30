@@ -284,30 +284,23 @@ const CompanyDetails = () => {
               </Button>
             )}
             
-            {!company.enrichedAt && !isEditing ? (
-              <Button
-                onClick={handleEnrich}
-                disabled={isEnriching}
-                className="gap-2 gradient-primary hover:opacity-90"
-              >
-                {isEnriching ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Buscando...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    Buscar com IA
-                  </>
-                )}
-              </Button>
-            ) : company.enrichedAt && !isEditing ? (
-              <Badge variant="secondary" className="gap-1.5 px-3 py-1.5">
-                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                Enriquecido em {format(new Date(company.enrichedAt), "dd/MM/yyyy", { locale: ptBR })}
-              </Badge>
-            ) : null}
+            <Button
+              onClick={handleEnrich}
+              disabled={isEnriching}
+              className="gap-2 gradient-primary hover:opacity-90"
+            >
+              {isEnriching ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Buscando...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  {company.enrichedAt ? 'Buscar novamente' : 'Buscar com IA'}
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>
@@ -379,29 +372,24 @@ const CompanyDetails = () => {
               )}
             </div>
 
-            {/* Botão Buscar com IA dentro do card */}
-            {!company.enrichedAt && (
-              <>
-                <Separator />
-                <Button
-                  onClick={handleEnrich}
-                  disabled={isEnriching}
-                  className="w-full gap-2 gradient-primary hover:opacity-90"
-                >
-                  {isEnriching ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Buscando dados...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      Buscar com IA
-                    </>
-                  )}
-                </Button>
-              </>
-            )}
+            <Separator />
+            <Button
+              onClick={handleEnrich}
+              disabled={isEnriching}
+              className="w-full gap-2 gradient-primary hover:opacity-90"
+            >
+              {isEnriching ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Buscando dados...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  {company.enrichedAt ? 'Buscar novamente com IA' : 'Buscar com IA'}
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
 
