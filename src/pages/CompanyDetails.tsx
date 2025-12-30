@@ -465,24 +465,26 @@ const CompanyDetails = () => {
                 </div>
               )}
               
-              {company.phones.length > 0 ? (
+            {company.phones.length > 0 ? (
                 <div className="space-y-2">
                   {company.phones.map((phone) => (
                     <div key={phone.id || phone.number} className="flex items-center gap-2 group">
-                      {phone.status === 'valid' ? (
-                        <MessageCircle className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <a 
-                        href={phone.status === 'valid' ? `https://wa.me/55${phone.number.replace(/\D/g, '')}` : `tel:${phone.number}`}
-                        target={phone.status === 'valid' ? '_blank' : undefined}
-                        rel={phone.status === 'valid' ? 'noopener noreferrer' : undefined}
-                        className="font-mono text-sm hover:text-primary transition-colors flex-1"
-                      >
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-mono text-sm flex-1">
                         {formatPhone(phone.number)}
-                      </a>
-                      <PhoneStatusBadge phone={phone} />
+                      </span>
+                      <PhoneStatusBadge phone={phone} showNumber={false} />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7 bg-green-500 hover:bg-green-600 text-white border-0"
+                        onClick={() => {
+                          const cleanNumber = phone.number.replace(/\D/g, '');
+                          window.open(`https://web.whatsapp.com/send?phone=55${cleanNumber}`, '_blank');
+                        }}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
                       {phone.id && (
                         <Button
                           variant="ghost"
