@@ -22,7 +22,10 @@ import {
   Users,
   Lock,
   ChevronDown,
-  FileText
+  FileText,
+  GripVertical,
+  DollarSign,
+  Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -430,6 +433,220 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* CRM Kanban Mockup Section */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5" />
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center mb-12">
+            <Badge variant="outline" className="mb-4">CRM Integrado</Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+              Gerencie seus leads com <span className="text-gradient">pipeline visual</span>
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Acompanhe cada oportunidade do primeiro contato até o fechamento. 
+              Arraste e solte para mover leads entre estágios.
+            </p>
+          </div>
+
+          {/* Kanban Mockup */}
+          <div className="max-w-5xl mx-auto">
+            <div className="glass rounded-2xl border border-border/50 p-4 overflow-hidden shadow-2xl">
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                {/* Stage: Prospecção */}
+                <div className="flex-shrink-0 w-64">
+                  <div className="glass rounded-xl border border-border/30 overflow-hidden">
+                    <div className="p-3 border-b border-border/30 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#6366f1' }} />
+                        <span className="text-sm font-medium">Prospecção</span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">3</Badge>
+                    </div>
+                    <div className="p-2 space-y-2">
+                      {[
+                        { name: 'Tech Solutions LTDA', city: 'São Paulo, SP', value: 5000 },
+                        { name: 'Digital Commerce SA', city: 'Rio de Janeiro, RJ', value: 8500 },
+                        { name: 'Inovação Tech ME', city: 'Curitiba, PR', value: null },
+                      ].map((company, idx) => (
+                        <div 
+                          key={idx}
+                          className="p-3 rounded-lg bg-secondary/50 border border-border/30 hover:bg-secondary/80 transition-colors cursor-grab"
+                        >
+                          <div className="flex items-start gap-2">
+                            <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{company.name}</p>
+                              <p className="text-xs text-muted-foreground">{company.city}</p>
+                              {company.value && (
+                                <Badge variant="outline" className="text-xs gap-1 mt-2">
+                                  <DollarSign className="h-3 w-3" />
+                                  R$ {company.value.toLocaleString('pt-BR')}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stage: Contato */}
+                <div className="flex-shrink-0 w-64">
+                  <div className="glass rounded-xl border border-border/30 overflow-hidden">
+                    <div className="p-3 border-b border-border/30 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
+                        <span className="text-sm font-medium">Contato</span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">2</Badge>
+                    </div>
+                    <div className="p-2 space-y-2">
+                      {[
+                        { name: 'Construções Modernas', city: 'Belo Horizonte, MG', value: 15000, date: '15/01' },
+                        { name: 'Logística Express', city: 'Campinas, SP', value: 7200, date: '20/01' },
+                      ].map((company, idx) => (
+                        <div 
+                          key={idx}
+                          className="p-3 rounded-lg bg-secondary/50 border border-border/30 hover:bg-secondary/80 transition-colors cursor-grab"
+                        >
+                          <div className="flex items-start gap-2">
+                            <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{company.name}</p>
+                              <p className="text-xs text-muted-foreground">{company.city}</p>
+                              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                <Badge variant="outline" className="text-xs gap-1">
+                                  <DollarSign className="h-3 w-3" />
+                                  R$ {company.value.toLocaleString('pt-BR')}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {company.date}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stage: Proposta */}
+                <div className="flex-shrink-0 w-64">
+                  <div className="glass rounded-xl border border-border/30 overflow-hidden ring-2 ring-primary/50">
+                    <div className="p-3 border-b border-border/30 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#8b5cf6' }} />
+                        <span className="text-sm font-medium">Proposta</span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">2</Badge>
+                    </div>
+                    <div className="p-2 space-y-2">
+                      {[
+                        { name: 'Indústria Alimentícia', city: 'Porto Alegre, RS', value: 25000, date: '10/01' },
+                        { name: 'Serviços Premium', city: 'Salvador, BA', value: 12000, date: '18/01' },
+                      ].map((company, idx) => (
+                        <div 
+                          key={idx}
+                          className="p-3 rounded-lg bg-secondary/50 border border-border/30 hover:bg-secondary/80 transition-colors cursor-grab"
+                        >
+                          <div className="flex items-start gap-2">
+                            <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{company.name}</p>
+                              <p className="text-xs text-muted-foreground">{company.city}</p>
+                              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                <Badge variant="outline" className="text-xs gap-1">
+                                  <DollarSign className="h-3 w-3" />
+                                  R$ {company.value.toLocaleString('pt-BR')}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {company.date}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-3 border-t border-border/30 text-center">
+                      <span className="text-xs text-muted-foreground">Total: </span>
+                      <span className="text-xs font-semibold text-primary">R$ 37.000</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stage: Fechado */}
+                <div className="flex-shrink-0 w-64">
+                  <div className="glass rounded-xl border border-border/30 overflow-hidden border-success/30">
+                    <div className="p-3 border-b border-border/30 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10b981' }} />
+                        <span className="text-sm font-medium">Fechado</span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">1</Badge>
+                    </div>
+                    <div className="p-2 space-y-2">
+                      <div className="p-3 rounded-lg bg-success/10 border border-success/30 cursor-grab">
+                        <div className="flex items-start gap-2">
+                          <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">Consultoria Alpha</p>
+                            <p className="text-xs text-muted-foreground">Brasília, DF</p>
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              <Badge className="text-xs gap-1 bg-success/20 text-success border-success/30">
+                                <DollarSign className="h-3 w-3" />
+                                R$ 45.000
+                              </Badge>
+                              <Badge variant="outline" className="text-xs gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-success" />
+                                Ganho
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-3 border-t border-border/30 text-center bg-success/5">
+                      <span className="text-xs text-muted-foreground">Total ganho: </span>
+                      <span className="text-xs font-semibold text-success">R$ 45.000</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CRM Features */}
+            <div className="grid sm:grid-cols-3 gap-4 mt-8">
+              <div className="glass rounded-xl p-4 text-center hover-glow">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <Target className="h-5 w-5 text-primary" />
+                </div>
+                <h4 className="font-medium text-sm mb-1">Pipeline Personalizável</h4>
+                <p className="text-xs text-muted-foreground">Crie estágios que refletem seu processo de vendas</p>
+              </div>
+              <div className="glass rounded-xl p-4 text-center hover-glow">
+                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mx-auto mb-3">
+                  <BarChart3 className="h-5 w-5 text-accent" />
+                </div>
+                <h4 className="font-medium text-sm mb-1">Valores e Previsões</h4>
+                <p className="text-xs text-muted-foreground">Acompanhe o valor total de cada estágio</p>
+              </div>
+              <div className="glass rounded-xl p-4 text-center hover-glow">
+                <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center mx-auto mb-3">
+                  <Clock className="h-5 w-5 text-success" />
+                </div>
+                <h4 className="font-medium text-sm mb-1">Histórico Completo</h4>
+                <p className="text-xs text-muted-foreground">Registre todas as interações com cada lead</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Benefits Section */}
       <section className="py-20">
