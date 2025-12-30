@@ -53,9 +53,9 @@ const Landing = () => {
   ];
 
   const mockLeads = [
-    { name: '22.******* ******** **** ***** ** ******', cnpj: '22.25*.***/*****-**', address: 'AVENIDA DOM SEVERINO, 824 - FATIMA', cep: '64049375', phone: '(XX) XXXX-XXXX' },
-    { name: '22.******* **** ********* ** **** ********', cnpj: '22.91*.***/*****-**', address: 'RUA CARLOS B., 3294 - VALE QUEM TEM', cep: '64057490', phone: '(XX) XXXX-XXXX' },
-    { name: '23.******* ******** **** ** ******', cnpj: '23.18*.***/*****-**', address: 'RUA SIMPLÍCIO MENDES, 1520 - CENTRO', cep: '64001120', phone: '(XX) XXXX-XXXX' },
+    { name: '22.******* ******** **** ***** ** ******', cnpj: '22.25*.***/*****-**', address: 'AVENIDA DOM S*******, 8** - F*****', cep: '640*****', phone: '(XX) XXXX-XXXX' },
+    { name: '22.******* **** ********* ** **** ********', cnpj: '22.91*.***/*****-**', address: 'RUA C***** B., 3*** - V*** Q*** T**', cep: '640*****', phone: '(XX) XXXX-XXXX' },
+    { name: '23.******* ******** **** ** ******', cnpj: '23.18*.***/*****-**', address: 'RUA S******* M*****, 1*** - C*****', cep: '640*****', phone: '(XX) XXXX-XXXX' },
   ];
 
   // Animation states
