@@ -231,12 +231,11 @@ export function SearchForm({ onSearch, isLoading, companies = [] }: SearchFormPr
         <div className="flex items-end gap-2">
           <Button 
             onClick={handleSearch} 
-            variant="secondary"
-            className="flex-1 h-10 md:h-11 gap-2 text-sm"
+            className="flex-1 h-10 md:h-11 gap-2 text-sm bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-md"
             disabled={isLoading}
           >
             <Search className="h-4 w-4" />
-            <span className="hidden sm:inline">{isLoading ? 'Filtrando...' : 'Filtrar'}</span>
+            {isLoading ? 'Filtrando...' : 'Filtrar'}
           </Button>
           {hasFilters && (
             <Button 
