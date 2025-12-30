@@ -287,12 +287,12 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
             
             <div className="space-y-2">
               <Label>UF</Label>
-              <Select value={uf} onValueChange={setUf}>
+              <Select value={uf || "all"} onValueChange={(val) => setUf(val === "all" ? "" : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {UF_LIST.map((state) => (
                     <SelectItem key={state} value={state}>{state}</SelectItem>
                   ))}
