@@ -39,25 +39,25 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50">
-      <SidebarContent className="pt-4">
+    <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar text-sidebar-foreground">
+      <SidebarContent className="pt-4 bg-sidebar">
         {/* Logo/Brand */}
-        <div className="px-4 pb-4 mb-2 border-b border-border/30">
+        <div className="px-4 pb-4 mb-2 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl gradient-primary">
               <Search className="h-5 w-5 text-primary-foreground" />
             </div>
             {!collapsed && (
               <div>
-                <h1 className="font-bold text-lg">Achei Leads</h1>
-                <p className="text-xs text-muted-foreground">Prospecção Inteligente</p>
+                <h1 className="font-bold text-lg text-sidebar-foreground">Achei Leads</h1>
+                <p className="text-xs text-sidebar-foreground/60">Prospecção Inteligente</p>
               </div>
             )}
           </div>
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs text-muted-foreground uppercase tracking-wider">
+          <SidebarGroupLabel className="text-xs text-sidebar-foreground/50 uppercase tracking-wider">
             {!collapsed && "Menu"}
           </SidebarGroupLabel>
 
@@ -73,8 +73,8 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-muted/50"
-                      activeClassName="bg-primary/10 text-primary font-medium"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-sidebar-accent text-sidebar-foreground"
+                      activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium"
                     >
                       <div className="relative">
                         <item.icon className="h-5 w-5 shrink-0" />
@@ -104,17 +104,17 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/30 p-4">
+      <SidebarFooter className="border-t border-sidebar-border p-4 bg-sidebar">
         {!collapsed && user && (
           <div className="mb-3 px-2">
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            <p className="text-xs text-sidebar-foreground/60 truncate">{user.email}</p>
           </div>
         )}
         <Button
           variant="ghost"
           size="sm"
           onClick={signOut}
-          className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+          className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
         >
           <LogOut className="h-4 w-4" />
           {!collapsed && <span>Sair</span>}
