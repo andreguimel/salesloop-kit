@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Buscar Empresas", url: "/buscar", icon: Search },
   { title: "CRM", url: "/crm", icon: Target, showOverdue: true },
   { title: "Histórico", url: "/historico", icon: History },
