@@ -1,9 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const RATE_LIMIT_MAX_REQUESTS = 20;
+const RATE_LIMIT_WINDOW_MINUTES = 60;
 
 interface CompanyData {
   id: string;
@@ -27,12 +31,59 @@ interface EnrichmentResult {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Get authorization header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authorization required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get user from JWT
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('Auth error:', userError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check rate limit
+    const { data: withinLimit } = await supabase.rpc('check_rate_limit', {
+      p_user_id: user.id,
+      p_endpoint: 'enrich-company',
+      p_max_requests: RATE_LIMIT_MAX_REQUESTS,
+      p_window_minutes: RATE_LIMIT_WINDOW_MINUTES
+    });
+
+    if (!withinLimit) {
+      console.warn(`Rate limit exceeded for user ${user.id}`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Limite de requisições excedido. Tente novamente mais tarde.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Increment rate limit counter
+    await supabase.rpc('increment_rate_limit', {
+      p_user_id: user.id,
+      p_endpoint: 'enrich-company'
+    });
+
     const { company } = await req.json() as { company: CompanyData };
 
     if (!company || !company.name) {
@@ -42,7 +93,19 @@ serve(async (req) => {
       );
     }
 
-    console.log('Enriching company:', company.name, 'CNPJ:', company.cnpj);
+    console.log(`User ${user.id} enriching company:`, company.name, 'CNPJ:', company.cnpj);
+
+    // Log audit event
+    await supabase.rpc('log_audit_event', {
+      p_user_id: user.id,
+      p_action: 'enrich',
+      p_table_name: 'companies',
+      p_record_id: company.id,
+      p_old_data: null,
+      p_new_data: { name: company.name, cnpj: company.cnpj },
+      p_ip_address: req.headers.get('x-forwarded-for'),
+      p_user_agent: req.headers.get('user-agent')
+    });
 
     const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -63,28 +126,26 @@ serve(async (req) => {
       );
     }
 
-    // Clean CNPJ for search (remove formatting)
+    // Clean CNPJ for search
     const cleanCnpj = company.cnpj?.replace(/\D/g, '') || '';
     const hasCnpj = cleanCnpj.length === 14;
 
-    // Step 1: Primary search - prioritize CNPJ if available, but also search by name
+    // Build search queries
     let primarySearchQuery: string;
     let secondaryNameSearch = '';
     
     if (hasCnpj) {
-      // Format CNPJ for better search results: XX.XXX.XXX/XXXX-XX
       const formattedCnpj = cleanCnpj.replace(
         /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
         '$1.$2.$3/$4-$5'
       );
       primarySearchQuery = `"${company.name}" ${company.city} ${company.state} empresa site contato email`;
       secondaryNameSearch = `CNPJ ${formattedCnpj} OR "${formattedCnpj}" empresa`;
-      console.log('Using name-based primary search:', primarySearchQuery);
-      console.log('CNPJ secondary search:', secondaryNameSearch);
     } else {
       primarySearchQuery = `"${company.name}" ${company.city} ${company.state} empresa site oficial contato email`;
-      console.log('Using name-based search:', primarySearchQuery);
     }
+
+    console.log('Primary search:', primarySearchQuery);
 
     const firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
@@ -111,12 +172,10 @@ serve(async (req) => {
     }
 
     const firecrawlData = await firecrawlResponse.json();
-    console.log('Primary search results count:', firecrawlData.data?.length || 0);
+    console.log('Primary search results:', firecrawlData.data?.length || 0);
 
-    // Step 2: Secondary search for contact info (always use company name)
+    // Contact search
     const contactSearchQuery = `"${company.name}" ${company.city} ${company.state} contato email telefone whatsapp`;
-    console.log('Contact search query:', contactSearchQuery);
-
     const contactResponse = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
       headers: {
@@ -126,22 +185,17 @@ serve(async (req) => {
       body: JSON.stringify({
         query: contactSearchQuery,
         limit: 5,
-        scrapeOptions: {
-          formats: ['markdown', 'links'],
-        },
+        scrapeOptions: { formats: ['markdown', 'links'] },
       }),
     });
 
     let contactData: any = { data: [] };
     if (contactResponse.ok) {
       contactData = await contactResponse.json();
-      console.log('Contact search results count:', contactData.data?.length || 0);
     }
 
-    // Step 3: Search for social media profiles (always use company name)
+    // Social media search
     const socialSearchQuery = `"${company.name}" ${company.city} instagram OR facebook OR linkedin`;
-    console.log('Social media search query:', socialSearchQuery);
-
     const socialResponse = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
       headers: {
@@ -151,78 +205,65 @@ serve(async (req) => {
       body: JSON.stringify({
         query: socialSearchQuery,
         limit: 5,
-        scrapeOptions: {
-          formats: ['markdown', 'links'],
-        },
+        scrapeOptions: { formats: ['markdown', 'links'] },
       }),
     });
 
     let socialData: any = { data: [] };
     if (socialResponse.ok) {
       socialData = await socialResponse.json();
-      console.log('Social media results count:', socialData.data?.length || 0);
     }
 
-    // Combine all search results
+    // Combine all results
     const allResults = [
       ...(firecrawlData.data || []), 
       ...(contactData.data || []),
       ...(socialData.data || [])
     ];
 
-    // Combine search results for AI processing
     const searchContent = allResults.map((result: any) => {
       const links = result.links?.slice(0, 15)?.join('\n') || '';
-      return `URL: ${result.url}\nTítulo: ${result.title || 'N/A'}\nLinks encontrados:\n${links}\nConteúdo: ${result.markdown?.slice(0, 2500) || result.description || 'N/A'}`;
-    }).join('\n\n---\n\n') || 'Nenhum resultado encontrado';
+      return `URL: ${result.url}\nTítulo: ${result.title || 'N/A'}\nLinks:\n${links}\nConteúdo: ${result.markdown?.slice(0, 2500) || result.description || 'N/A'}`;
+    }).join('\n\n---\n\n') || 'Nenhum resultado';
 
-    // Check if company name contains asterisks or seems incomplete
-    const nameHasAsterisks = company.name.includes('*') || company.name.includes('**');
-    
-    const aiPrompt = `Analise os resultados de busca abaixo sobre a empresa com os seguintes dados:
-- Nome cadastrado: "${company.name}"
+    const aiPrompt = `Analise os resultados sobre a empresa:
+- Nome: "${company.name}"
 - CNPJ: ${company.cnpj || 'Não informado'}
-- Cidade: ${company.city}
-- Estado: ${company.state}
+- Cidade: ${company.city}, ${company.state}
 
-TAREFA: Extraia as informações REAIS desta empresa específica a partir dos resultados de busca.
+Extraia informações REAIS desta empresa:
+1. RAZÃO SOCIAL (nome jurídico oficial)
+2. NOME FANTASIA (nome comercial)
+3. Website oficial
+4. Email de contato
+5. Instagram oficial
+6. Facebook oficial
+7. LinkedIn
+8. Resumo (máximo 150 palavras)
 
-INFORMAÇÕES A EXTRAIR:
-1. RAZÃO SOCIAL da empresa (nome jurídico oficial completo registrado, sem asteriscos) - MUITO IMPORTANTE
-2. NOME FANTASIA da empresa (nome comercial/marca que a empresa usa, diferente da razão social)
-3. Website oficial (URL completa começando com https://)
-4. Email de contato (email completo e válido, sem asteriscos)
-5. Instagram oficial (@usuario ou URL completa)
-6. Facebook oficial (URL completa)
-7. LinkedIn da empresa (URL completa)
-8. Resumo sobre a empresa (máximo 150 palavras descrevendo o que a empresa faz)
+REGRAS:
+- Retorne APENAS JSON válido
+- Se não encontrar, use null
+- VALIDE que as informações são DESTA empresa
+- IGNORE emails/dados com asteriscos (***)
+- IGNORE informações de outras empresas
 
-REGRAS CRÍTICAS:
-- Retorne APENAS um JSON válido, sem markdown, sem código, sem texto adicional
-- Se não encontrar uma informação com certeza, use null
-- VALIDE que as informações são realmente DESTA empresa (confira o CNPJ ${company.cnpj || ''} se disponível)
-- IGNORE emails mascarados com asteriscos (***) - retorne null
-- IGNORE informações de outras empresas que aparecem nos resultados
-- Para redes sociais, retorne apenas perfis oficiais verificados da empresa
-- O website deve ser o site oficial da empresa, não diretórios ou listas
-- IMPORTANTE: Razão Social é o nome jurídico (ex: "EMPRESA XYZ LTDA"), Nome Fantasia é o nome comercial (ex: "XYZ Store")
-
-Formato EXATO de resposta (apenas o JSON):
+Formato:
 {
-  "razaoSocial": "RAZAO SOCIAL COMPLETA LTDA" ou null,
-  "nomeFantasia": "Nome Fantasia da Empresa" ou null,
-  "website": "https://www.empresa.com.br" ou null,
-  "email": "contato@empresa.com.br" ou null,
+  "razaoSocial": "RAZAO SOCIAL LTDA" ou null,
+  "nomeFantasia": "Nome Fantasia" ou null,
+  "website": "https://site.com" ou null,
+  "email": "email@empresa.com" ou null,
   "instagram": "https://instagram.com/empresa" ou null,
   "facebook": "https://facebook.com/empresa" ou null,
   "linkedin": "https://linkedin.com/company/empresa" ou null,
-  "summary": "Descrição do que a empresa faz..." ou null
+  "summary": "Descrição..." ou null
 }
 
-RESULTADOS DA BUSCA:
+RESULTADOS:
 ${searchContent}`;
 
-    console.log('Calling Lovable AI for data extraction...');
+    console.log('Calling Lovable AI...');
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -235,12 +276,9 @@ ${searchContent}`;
         messages: [
           {
             role: 'system',
-            content: 'Você é um especialista em extração de dados empresariais. Sua tarefa é analisar resultados de busca e extrair informações precisas e verificadas sobre empresas brasileiras. Sempre valide que os dados correspondem à empresa correta usando o CNPJ quando disponível. Retorne apenas JSON válido.'
+            content: 'Você extrai dados empresariais. Retorne apenas JSON válido.'
           },
-          {
-            role: 'user',
-            content: aiPrompt
-          }
+          { role: 'user', content: aiPrompt }
         ],
       }),
     });
@@ -248,13 +286,13 @@ ${searchContent}`;
     if (!aiResponse.ok) {
       if (aiResponse.status === 429) {
         return new Response(
-          JSON.stringify({ success: false, error: 'Limite de requisições excedido, tente novamente mais tarde' }),
+          JSON.stringify({ success: false, error: 'Limite de requisições excedido' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       if (aiResponse.status === 402) {
         return new Response(
-          JSON.stringify({ success: false, error: 'Créditos insuficientes para Lovable AI' }),
+          JSON.stringify({ success: false, error: 'Créditos insuficientes' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -270,19 +308,15 @@ ${searchContent}`;
     const aiContent = aiData.choices?.[0]?.message?.content || '';
     console.log('AI response:', aiContent);
 
-    // Parse AI response
     let enrichmentResult: EnrichmentResult = {};
     try {
-      // Try to extract JSON from the response
       const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         
-      // Validate and clean data
         const razaoSocial = parsed.razaoSocial && !parsed.razaoSocial.includes('*') ? parsed.razaoSocial : undefined;
         const nomeFantasia = parsed.nomeFantasia && !parsed.nomeFantasia.includes('*') ? parsed.nomeFantasia : undefined;
         
-        // Build combined name: "Razão Social | Nome Fantasia" or just one if only one is available
         let combinedName: string | undefined = undefined;
         if (razaoSocial && nomeFantasia && razaoSocial !== nomeFantasia) {
           combinedName = `${razaoSocial} | ${nomeFantasia}`;
@@ -294,8 +328,8 @@ ${searchContent}`;
         
         enrichmentResult = {
           name: combinedName,
-          razaoSocial: razaoSocial,
-          nomeFantasia: nomeFantasia,
+          razaoSocial,
+          nomeFantasia,
           website: parsed.website && parsed.website.startsWith('http') ? parsed.website : undefined,
           email: parsed.email && parsed.email.includes('@') && !parsed.email.includes('*') ? parsed.email : undefined,
           instagram: parsed.instagram && (parsed.instagram.includes('instagram.com') || parsed.instagram.startsWith('@')) ? parsed.instagram : undefined,
@@ -307,7 +341,7 @@ ${searchContent}`;
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
       enrichmentResult = {
-        aiSummary: 'Não foi possível extrair informações estruturadas desta empresa.',
+        aiSummary: 'Não foi possível extrair informações estruturadas.',
       };
     }
 
@@ -323,9 +357,8 @@ ${searchContent}`;
     );
   } catch (error) {
     console.error('Error enriching company:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
