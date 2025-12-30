@@ -18,7 +18,8 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  Pencil
+  Pencil,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -331,10 +332,26 @@ const CompanyDetails = () => {
             <Separator />
             
             <div>
-              <span className="text-sm text-muted-foreground flex items-center gap-1.5 mb-1">
-                <MapPin className="h-3.5 w-3.5" />
-                Localização
-              </span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Localização
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs h-7"
+                  onClick={() => {
+                    const query = encodeURIComponent(
+                      `${company.name} ${company.address || ''} ${company.city} ${company.state}`.trim()
+                    );
+                    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+                  }}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Google Maps
+                </Button>
+              </div>
               <p>{company.city}, {company.state}</p>
               {company.address && (
                 <p className="text-sm text-muted-foreground">{company.address}</p>
@@ -343,6 +360,30 @@ const CompanyDetails = () => {
                 <p className="text-sm text-muted-foreground">CEP: {company.cep}</p>
               )}
             </div>
+
+            {/* Botão Buscar com IA dentro do card */}
+            {!company.enrichedAt && (
+              <>
+                <Separator />
+                <Button
+                  onClick={handleEnrich}
+                  disabled={isEnriching}
+                  className="w-full gap-2 gradient-primary hover:opacity-90"
+                >
+                  {isEnriching ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Buscando dados...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Buscar com IA
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
