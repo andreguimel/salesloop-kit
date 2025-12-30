@@ -16,7 +16,7 @@ serve(async (req) => {
       throw new Error('API key not configured');
     }
 
-    const { cnae, page = 1, limit = 20 } = await req.json();
+    const { cnae, uf, cidade, limit = 50 } = await req.json();
 
     if (!cnae || cnae.trim().length < 2) {
       return new Response(
@@ -27,7 +27,16 @@ serve(async (req) => {
 
     const baseUrl = 'https://consulta.thelostworld.space';
     
-    const searchUrl = `${baseUrl}/empresas?cnae=${encodeURIComponent(cnae)}&page=${page}&limit=${limit}`;
+    // Build URL with optional filters
+    let searchUrl = `${baseUrl}/empresas?cnae=${encodeURIComponent(cnae.trim())}`;
+    
+    if (uf && uf.trim()) {
+      searchUrl += `&uf=${encodeURIComponent(uf.trim().toUpperCase())}`;
+    }
+    
+    if (cidade && cidade.trim()) {
+      searchUrl += `&cidade=${encodeURIComponent(cidade.trim())}`;
+    }
 
     console.log('Searching API:', searchUrl);
 

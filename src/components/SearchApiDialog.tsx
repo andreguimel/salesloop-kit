@@ -3,12 +3,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, Loader2, Building2, Phone, MapPin, Plus, Check } from 'lucide-react';
+import { Search, Loader2, Building2, Phone, MapPin, Plus, Check, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface SearchResult {
   cnpj?: string;
@@ -28,9 +29,19 @@ interface SearchApiDialogProps {
   onCompaniesImported: () => void;
 }
 
+const UF_LIST = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
+  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 
+  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+];
+
 export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   const [open, setOpen] = useState(false);
   const [cnae, setCnae] = useState('');
+  const [uf, setUf] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [onlyWithPhone, setOnlyWithPhone] = useState(false);
+  const [onlyWithEmail, setOnlyWithEmail] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [isSearching, setIsSearching] = useState(false);
@@ -52,15 +63,26 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
 
     try {
       const { data, error } = await supabase.functions.invoke('search-api', {
-        body: { cnae, page: 1, limit: 20 },
+        body: { cnae, uf, cidade, limit: 50 },
       });
 
       if (error) throw error;
 
       // Handle different response formats
-      const companies = Array.isArray(data) 
+      let companies = Array.isArray(data) 
         ? data 
         : data?.companies || data?.data || data?.results || [];
+
+      // Apply local filters
+      if (onlyWithPhone) {
+        companies = companies.filter((c: SearchResult) => 
+          c.telefone1 || c.telefone2 || c.telefone || c.phone
+        );
+      }
+      
+      if (onlyWithEmail) {
+        companies = companies.filter((c: SearchResult) => c.email);
+      }
 
       setResults(companies);
 
@@ -186,47 +208,111 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
     }
   };
 
+  const handleClose = () => {
+    setOpen(false);
+    setCnae('');
+    setUf('');
+    setCidade('');
+    setOnlyWithPhone(false);
+    setOnlyWithEmail(false);
+    setResults([]);
+    setSelectedResults(new Set());
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => isOpen ? setOpen(true) : handleClose()}>
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2 border-primary/30 hover:bg-primary/10">
           <Search className="h-4 w-4" />
-          Busca Geral
+          Buscar Empresas
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5 text-primary" />
-            Busca por CNAE
+            <Building2 className="h-5 w-5 text-primary" />
+            Buscar Empresas por CNAE
           </DialogTitle>
           <DialogDescription>
-            Busque empresas por código CNAE e importe para sua lista
+            Busque empresas por CNAE, UF e cidade
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-          {/* Search Input */}
-          <div className="space-y-2">
-            <Label>Código CNAE</Label>
-            <div className="flex gap-2">
+          {/* Search Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>CNAE</Label>
               <Input
                 placeholder="Ex: 4711302, 5611201..."
                 value={cnae}
                 onChange={(e) => setCnae(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1"
               />
-              <Button onClick={handleSearch} disabled={isSearching} className="gap-2">
-                {isSearching ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                Buscar
-              </Button>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>UF</Label>
+              <Select value={uf} onValueChange={setUf}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  {UF_LIST.map((state) => (
+                    <SelectItem key={state} value={state}>{state}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Cidade</Label>
+              <Input
+                placeholder="Nome da cidade..."
+                value={cidade}
+                onChange={(e) => setCidade(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
             </div>
           </div>
+
+          {/* Filters */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="phone-filter" 
+                checked={onlyWithPhone}
+                onCheckedChange={(checked) => setOnlyWithPhone(checked === true)}
+              />
+              <label htmlFor="phone-filter" className="text-sm flex items-center gap-1 cursor-pointer">
+                <Phone className="h-4 w-4" />
+                Somente com telefone
+              </label>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="email-filter" 
+                checked={onlyWithEmail}
+                onCheckedChange={(checked) => setOnlyWithEmail(checked === true)}
+              />
+              <label htmlFor="email-filter" className="text-sm flex items-center gap-1 cursor-pointer">
+                <Mail className="h-4 w-4" />
+                Somente com email
+              </label>
+            </div>
+          </div>
+
+          {/* Search Button */}
+          <Button onClick={handleSearch} disabled={isSearching} className="w-full gap-2">
+            {isSearching ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+            Buscar Empresas
+          </Button>
 
           {/* Results */}
           {results.length > 0 && (
