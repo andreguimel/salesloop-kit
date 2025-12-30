@@ -16,6 +16,7 @@ import Reports from "./pages/Reports";
 import CRM from "./pages/CRM";
 import Settings from "./pages/Settings";
 import Credits from "./pages/Credits";
+import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import TermosDeUso from "./pages/TermosDeUso";
 import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
@@ -88,6 +89,11 @@ const App = () => (
                   <AppLayout>
                     <Credits />
                   </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <Admin />
                 </ProtectedRoute>
               } />
               <Route path="/termos-de-uso" element={
