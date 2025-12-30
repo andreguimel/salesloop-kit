@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Building2, MapPin, Phone, Mail, Loader2, Download, CheckCircle } from 'lucide-react';
+import { Search, Building2, MapPin, Phone, Mail, Loader2, Download, CheckCircle, Coins, AlertCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,9 +12,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { importCompanyFromSearch, SearchCompanyResult } from '@/lib/api';
+import { useCredits } from '@/hooks/useCredits';
+import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 interface SearchByCepDialogProps {
   open: boolean;
@@ -65,6 +69,7 @@ export function SearchByCepDialog({ open, onOpenChange, onCompanyImported }: Sea
   const [results, setResults] = useState<CepCompany[]>([]);
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
   const [importedIds, setImportedIds] = useState<Set<string>>(new Set());
+  const { balance, hasCredits, consumeCredits, isCritical, isLow } = useCredits();
 
   const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCep(formatCep(e.target.value));
