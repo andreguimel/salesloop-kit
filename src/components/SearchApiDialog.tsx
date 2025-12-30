@@ -15,7 +15,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { fetchCnaes, Cnae } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useCredits } from '@/hooks/useCredits';
-import { maskName, maskCnpj, maskPhone } from '@/lib/mask-utils';
+import { maskName, maskCnpj, maskPhone, maskAddress, maskCep } from '@/lib/mask-utils';
 interface SearchResult {
   cnpj?: string;
   nome?: string;
@@ -545,7 +545,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                             {endereco && (
                               <div className="flex items-start gap-1 mt-1 text-sm text-muted-foreground">
                                 <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                                <span className="line-clamp-2">{endereco}{cep && ` - CEP: ${cep}`}</span>
+                                <span className="line-clamp-2">{maskAddress(endereco)}{cep && ` - CEP: ${maskCep(cep)}`}</span>
                               </div>
                             )}
                             {contatos && (

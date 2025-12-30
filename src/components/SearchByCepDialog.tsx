@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { importCompanyFromSearch, SearchCompanyResult } from '@/lib/api';
 import { useCredits } from '@/hooks/useCredits';
-import { maskName, maskCnpj, maskPhone, maskEmail } from '@/lib/mask-utils';
+import { maskName, maskCnpj, maskPhone, maskEmail, maskAddress, maskCep } from '@/lib/mask-utils';
 
 interface SearchByCepDialogProps {
   open: boolean;
@@ -284,7 +284,7 @@ export function SearchByCepDialog({ open, onOpenChange, onCompanyImported }: Sea
                               <div className="flex items-center gap-2 ml-6">
                                 <MapPin className="h-3 w-3 shrink-0" />
                                 <span className="truncate">
-                                  {company.address}{company.number ? `, ${company.number}` : ''} - {company.neighborhood} - {company.city}/{company.state}
+                                  {maskAddress(company.address)}{company.number ? `, ${company.number.slice(0, 2)}**` : ''} - {maskAddress(company.neighborhood)} - {company.city}/{company.state}
                                 </span>
                               </div>
                             )}
