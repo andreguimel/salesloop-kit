@@ -474,7 +474,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                 </div>
               </div>
 
-              <ScrollArea className="flex-1 border rounded-lg min-h-0 max-h-[400px]">
+              <div className="border rounded-lg max-h-[350px] overflow-y-auto">
                 <div className="space-y-1 p-2">
                   {results.map((result, index) => {
                     const id = result.cnpj || index.toString();
@@ -549,7 +549,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                     </div>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
             </>
           )}
 
