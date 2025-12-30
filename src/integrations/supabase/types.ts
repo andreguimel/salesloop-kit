@@ -495,7 +495,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decrement_credits: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: number
+      }
     }
     Enums: {
       credit_transaction_type: "purchase" | "consumption" | "bonus" | "refund"
