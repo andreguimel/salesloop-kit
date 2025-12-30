@@ -567,6 +567,7 @@ export async function importCompanyFromSearch(searchResult: SearchCompanyResult)
 
 // Enrich company with AI (Firecrawl + Lovable AI)
 export interface EnrichmentResult {
+  name?: string;
   website?: string;
   email?: string;
   instagram?: string;
@@ -607,17 +608,24 @@ export async function enrichCompany(company: Company): Promise<EnrichCompanyResp
 
   // Update company in database with enriched data
   if (data.data) {
+    const updateData: Record<string, any> = {
+      website: data.data.website,
+      email: data.data.email,
+      instagram: data.data.instagram,
+      facebook: data.data.facebook,
+      linkedin: data.data.linkedin,
+      ai_summary: data.data.aiSummary,
+      enriched_at: new Date().toISOString(),
+    };
+    
+    // Update name if a better one was found (replaces names with asterisks)
+    if (data.data.name) {
+      updateData.name = data.data.name;
+    }
+    
     const { error: updateError } = await supabase
       .from('companies')
-      .update({
-        website: data.data.website,
-        email: data.data.email,
-        instagram: data.data.instagram,
-        facebook: data.data.facebook,
-        linkedin: data.data.linkedin,
-        ai_summary: data.data.aiSummary,
-        enriched_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', company.id);
 
     if (updateError) {

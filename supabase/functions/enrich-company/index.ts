@@ -15,6 +15,7 @@ interface CompanyData {
 }
 
 interface EnrichmentResult {
+  name?: string;
   website?: string;
   email?: string;
   instagram?: string;
@@ -126,28 +127,34 @@ serve(async (req) => {
     }).join('\n\n---\n\n') || 'Nenhum resultado encontrado';
 
     // Step 2: Process with Lovable AI to extract structured data
+    // Check if company name contains asterisks or seems incomplete
+    const nameHasAsterisks = company.name.includes('*') || company.name.includes('**');
+    
     const aiPrompt = `Analise os resultados de busca abaixo sobre a empresa "${company.name}" localizada em ${company.city}, ${company.state}.
 
 Extraia as seguintes informações (se encontradas):
-1. Website oficial da empresa (URL completa)
-2. Email de contato REAL e COMPLETO (sem asteriscos ou mascaramento)
-3. Instagram (URL completa ou @usuario)
-4. Facebook (URL completa)
-5. LinkedIn (URL completa)
-6. Um breve resumo sobre a empresa (máximo 150 palavras)
+1. ${nameHasAsterisks ? 'NOME REAL/COMPLETO da empresa (sem asteriscos ou mascaramento) - MUITO IMPORTANTE' : 'Nome da empresa (se encontrar um nome mais completo ou correto)'}
+2. Website oficial da empresa (URL completa)
+3. Email de contato REAL e COMPLETO (sem asteriscos ou mascaramento)
+4. Instagram (URL completa ou @usuario)
+5. Facebook (URL completa)
+6. LinkedIn (URL completa)
+7. Um breve resumo sobre a empresa (máximo 150 palavras)
 
 REGRAS IMPORTANTES: 
 - Retorne APENAS um JSON válido, sem markdown, sem blocos de código, sem texto adicional
 - Se não encontrar uma informação, use null
+${nameHasAsterisks ? '- O nome atual "${company.name}" contém asteriscos/mascaramento. PROCURE o nome real da empresa nos resultados e retorne-o no campo "name"' : '- Se encontrar o nome completo/correto da empresa, retorne no campo "name", caso contrário use null'}
 - IGNORE emails mascarados com asteriscos (***) ou parciais - retorne null nesses casos
 - Para redes sociais, procure nos links e no conteúdo - inclua apenas perfis oficiais da empresa
 - URLs de Instagram devem começar com https://instagram.com/ ou https://www.instagram.com/
 - URLs de Facebook devem começar com https://facebook.com/ ou https://www.facebook.com/
 - URLs de LinkedIn devem começar com https://linkedin.com/ ou https://www.linkedin.com/
-- Valide que os dados são realmente da empresa "${company.name}"
+- Valide que os dados são realmente da empresa
 
 Formato de resposta (apenas o JSON, nada mais):
 {
+  "name": "Nome Real da Empresa" ou null,
   "website": "https://...",
   "email": "contato@...",
   "instagram": "https://instagram.com/...",
@@ -215,6 +222,7 @@ ${searchContent}`;
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         enrichmentResult = {
+          name: parsed.name || null,
           website: parsed.website || null,
           email: parsed.email || null,
           instagram: parsed.instagram || null,
