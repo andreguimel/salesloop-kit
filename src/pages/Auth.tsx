@@ -183,14 +183,14 @@ export default function Auth() {
 
       <div className="relative w-full max-w-md">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8 animate-fade-up">
+        <Link to="/" className="flex items-center justify-center gap-3 mb-8 animate-fade-up hover:opacity-80 transition-opacity cursor-pointer">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl gradient-primary glow-primary">
             <Sparkles className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gradient">Achei Leads</h1>
           </div>
-        </div>
+        </Link>
 
         {/* Auth Card */}
         <div className="glass rounded-2xl p-8 animate-fade-up" style={{ animationDelay: '100ms' }}>
