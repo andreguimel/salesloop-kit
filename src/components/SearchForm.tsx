@@ -36,12 +36,10 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   const hasFilters = filters.cnae || filters.city || filters.segment;
 
   return (
-    <div className="p-4 md:p-6 rounded-2xl glass animate-fade-up" style={{ animationDelay: '200ms' }}>
-      <div className="flex items-center gap-3 mb-4 md:mb-6">
-        <div className="p-2 rounded-lg gradient-primary">
-          <SlidersHorizontal className="h-4 w-4 text-primary-foreground" />
-        </div>
-        <h3 className="text-base md:text-lg font-semibold">Filtros de Busca</h3>
+    <div className="p-4 md:p-5 rounded-xl border border-border/30 bg-secondary/30 animate-fade-up" style={{ animationDelay: '200ms' }}>
+      <div className="flex items-center gap-2 mb-3 md:mb-4">
+        <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-sm font-medium text-muted-foreground">Filtrar resultados</h3>
       </div>
       
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -103,19 +101,19 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
         <div className="flex items-end gap-2">
           <Button 
             onClick={handleSearch} 
-            className="flex-1 h-10 md:h-11 gap-2 gradient-primary hover:opacity-90 transition-opacity font-semibold"
+            variant="secondary"
+            className="flex-1 h-9 md:h-10 gap-2 text-sm"
             disabled={isLoading}
           >
             <Search className="h-4 w-4" />
-            <span className="hidden sm:inline">{isLoading ? 'Buscando...' : 'Buscar'}</span>
-            <span className="sm:hidden">{isLoading ? '...' : ''}</span>
+            <span className="hidden sm:inline">{isLoading ? 'Filtrando...' : 'Filtrar'}</span>
           </Button>
           {hasFilters && (
             <Button 
-              variant="outline" 
+              variant="ghost" 
               size="icon"
               onClick={handleClear}
-              className="h-10 md:h-11 w-10 md:w-11 border-border/50 hover:bg-secondary shrink-0"
+              className="h-9 md:h-10 w-9 md:w-10 text-muted-foreground hover:text-foreground shrink-0"
             >
               <X className="h-4 w-4" />
             </Button>

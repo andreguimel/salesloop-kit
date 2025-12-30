@@ -307,8 +307,8 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => isOpen ? setOpen(true) : handleClose()}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2 border-primary/30 hover:bg-primary/10">
-          <Search className="h-4 w-4" />
+        <Button size="lg" className="gap-2 gradient-primary hover:opacity-90 text-base font-semibold shadow-lg glow-primary px-6">
+          <Search className="h-5 w-5" />
           Buscar Empresas
         </Button>
       </DialogTrigger>
