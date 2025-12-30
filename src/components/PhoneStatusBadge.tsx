@@ -9,7 +9,7 @@ interface PhoneStatusBadgeProps {
 
 const statusConfig = {
   valid: {
-    label: 'Válido',
+    label: 'Com WhatsApp',
     icon: CheckCircle2,
     variant: 'valid' as const,
   },
@@ -19,12 +19,12 @@ const statusConfig = {
     variant: 'uncertain' as const,
   },
   invalid: {
-    label: 'Inválido',
+    label: 'Sem WhatsApp',
     icon: XCircle,
     variant: 'invalid' as const,
   },
   pending: {
-    label: 'Pendente',
+    label: 'Não verificado',
     icon: Clock,
     variant: 'pending' as const,
   },
