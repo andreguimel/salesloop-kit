@@ -16,6 +16,8 @@ interface CompanyData {
 
 interface EnrichmentResult {
   name?: string;
+  razaoSocial?: string;
+  nomeFantasia?: string;
   website?: string;
   email?: string;
   instagram?: string;
@@ -188,13 +190,14 @@ serve(async (req) => {
 TAREFA: Extraia as informações REAIS desta empresa específica a partir dos resultados de busca.
 
 INFORMAÇÕES A EXTRAIR:
-1. ${nameHasAsterisks ? 'NOME REAL/COMPLETO da empresa (sem asteriscos ou mascaramento) - MUITO IMPORTANTE' : 'Nome completo/razão social da empresa (se encontrar)'}
-2. Website oficial (URL completa começando com https://)
-3. Email de contato (email completo e válido, sem asteriscos)
-4. Instagram oficial (@usuario ou URL completa)
-5. Facebook oficial (URL completa)
-6. LinkedIn da empresa (URL completa)
-7. Resumo sobre a empresa (máximo 150 palavras descrevendo o que a empresa faz)
+1. RAZÃO SOCIAL da empresa (nome jurídico oficial completo registrado, sem asteriscos) - MUITO IMPORTANTE
+2. NOME FANTASIA da empresa (nome comercial/marca que a empresa usa, diferente da razão social)
+3. Website oficial (URL completa começando com https://)
+4. Email de contato (email completo e válido, sem asteriscos)
+5. Instagram oficial (@usuario ou URL completa)
+6. Facebook oficial (URL completa)
+7. LinkedIn da empresa (URL completa)
+8. Resumo sobre a empresa (máximo 150 palavras descrevendo o que a empresa faz)
 
 REGRAS CRÍTICAS:
 - Retorne APENAS um JSON válido, sem markdown, sem código, sem texto adicional
@@ -204,10 +207,12 @@ REGRAS CRÍTICAS:
 - IGNORE informações de outras empresas que aparecem nos resultados
 - Para redes sociais, retorne apenas perfis oficiais verificados da empresa
 - O website deve ser o site oficial da empresa, não diretórios ou listas
+- IMPORTANTE: Razão Social é o nome jurídico (ex: "EMPRESA XYZ LTDA"), Nome Fantasia é o nome comercial (ex: "XYZ Store")
 
 Formato EXATO de resposta (apenas o JSON):
 {
-  "name": "Razão Social Completa" ou null,
+  "razaoSocial": "RAZAO SOCIAL COMPLETA LTDA" ou null,
+  "nomeFantasia": "Nome Fantasia da Empresa" ou null,
   "website": "https://www.empresa.com.br" ou null,
   "email": "contato@empresa.com.br" ou null,
   "instagram": "https://instagram.com/empresa" ou null,
@@ -275,15 +280,30 @@ ${searchContent}`;
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         
-        // Validate and clean data
+      // Validate and clean data
+        const razaoSocial = parsed.razaoSocial && !parsed.razaoSocial.includes('*') ? parsed.razaoSocial : undefined;
+        const nomeFantasia = parsed.nomeFantasia && !parsed.nomeFantasia.includes('*') ? parsed.nomeFantasia : undefined;
+        
+        // Build combined name: "Razão Social | Nome Fantasia" or just one if only one is available
+        let combinedName: string | undefined = undefined;
+        if (razaoSocial && nomeFantasia && razaoSocial !== nomeFantasia) {
+          combinedName = `${razaoSocial} | ${nomeFantasia}`;
+        } else if (razaoSocial) {
+          combinedName = razaoSocial;
+        } else if (nomeFantasia) {
+          combinedName = nomeFantasia;
+        }
+        
         enrichmentResult = {
-          name: parsed.name && !parsed.name.includes('*') ? parsed.name : null,
-          website: parsed.website && parsed.website.startsWith('http') ? parsed.website : null,
-          email: parsed.email && parsed.email.includes('@') && !parsed.email.includes('*') ? parsed.email : null,
-          instagram: parsed.instagram && (parsed.instagram.includes('instagram.com') || parsed.instagram.startsWith('@')) ? parsed.instagram : null,
-          facebook: parsed.facebook && parsed.facebook.includes('facebook.com') ? parsed.facebook : null,
-          linkedin: parsed.linkedin && parsed.linkedin.includes('linkedin.com') ? parsed.linkedin : null,
-          aiSummary: parsed.summary || null,
+          name: combinedName,
+          razaoSocial: razaoSocial,
+          nomeFantasia: nomeFantasia,
+          website: parsed.website && parsed.website.startsWith('http') ? parsed.website : undefined,
+          email: parsed.email && parsed.email.includes('@') && !parsed.email.includes('*') ? parsed.email : undefined,
+          instagram: parsed.instagram && (parsed.instagram.includes('instagram.com') || parsed.instagram.startsWith('@')) ? parsed.instagram : undefined,
+          facebook: parsed.facebook && parsed.facebook.includes('facebook.com') ? parsed.facebook : undefined,
+          linkedin: parsed.linkedin && parsed.linkedin.includes('linkedin.com') ? parsed.linkedin : undefined,
+          aiSummary: parsed.summary || undefined,
         };
       }
     } catch (parseError) {
