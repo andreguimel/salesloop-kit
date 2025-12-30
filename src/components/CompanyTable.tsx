@@ -92,6 +92,15 @@ export function CompanyTable({ companies, onPhonesValidated }: CompanyTableProps
     return phone;
   };
 
+  // Format CNPJ for display
+  const formatCnpj = (cnpj: string) => {
+    const cleaned = cnpj.replace(/\D/g, '');
+    if (cleaned.length === 14) {
+      return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5, 8)}/${cleaned.slice(8, 12)}-${cleaned.slice(12)}`;
+    }
+    return cnpj;
+  };
+
   if (companies.length === 0) {
     return (
       <div className="p-16 rounded-2xl glass text-center animate-fade-up" style={{ animationDelay: '300ms' }}>
@@ -149,10 +158,10 @@ export function CompanyTable({ companies, onPhonesValidated }: CompanyTableProps
                 Empresa
               </th>
               <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
-                CNAE
+                CNPJ
               </th>
               <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
-                Local
+                Local / Endereço
               </th>
               <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
                 Telefones
@@ -171,9 +180,34 @@ export function CompanyTable({ companies, onPhonesValidated }: CompanyTableProps
               >
                 <td className="px-5 py-4">
                   <div className="font-semibold text-foreground">{company.name}</div>
-                  {company.segment && (
-                    <div className="text-sm text-muted-foreground mt-0.5">{company.segment}</div>
+                  {company.cnae && (
+                    <code className="text-xs font-mono px-1.5 py-0.5 rounded bg-secondary text-muted-foreground mt-1 inline-block">
+                      CNAE: {company.cnae}
+                    </code>
                   )}
+                </td>
+                <td className="px-5 py-4">
+                  {company.cnpj ? (
+                    <code className="text-sm font-mono text-foreground">
+                      {formatCnpj(company.cnpj)}
+                    </code>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">-</span>
+                  )}
+                </td>
+                <td className="px-5 py-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      {company.city}, {company.state}
+                    </div>
+                    {company.address && (
+                      <div className="text-xs text-muted-foreground line-clamp-2 max-w-xs">
+                        {company.address}
+                        {company.cep && ` - CEP: ${company.cep}`}
+                      </div>
+                    )}
+                  </div>
                 </td>
                 <td className="px-5 py-4">
                   <code className="text-xs font-mono px-2 py-1 rounded bg-secondary text-muted-foreground">

@@ -226,15 +226,18 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
         const searchCity = cidade || '';
         const searchState = uf || '';
 
-        // Insert company
+        // Insert company with all available data
         const { data: newCompany, error: companyError } = await supabase
           .from('companies')
           .insert({
             name: companyName,
+            cnpj: company.cnpj || null,
             cnae: cnae,
             cnae_description: '',
             city: searchCity,
             state: searchState,
+            address: company.endereco || null,
+            cep: company.cep || null,
             segment: null,
             user_id: user.id,
           })
