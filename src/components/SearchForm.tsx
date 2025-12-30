@@ -36,15 +36,15 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   const hasFilters = filters.cnae || filters.city || filters.segment;
 
   return (
-    <div className="p-6 rounded-2xl glass animate-fade-up" style={{ animationDelay: '200ms' }}>
-      <div className="flex items-center gap-3 mb-6">
+    <div className="p-4 md:p-6 rounded-2xl glass animate-fade-up" style={{ animationDelay: '200ms' }}>
+      <div className="flex items-center gap-3 mb-4 md:mb-6">
         <div className="p-2 rounded-lg gradient-primary">
           <SlidersHorizontal className="h-4 w-4 text-primary-foreground" />
         </div>
-        <h3 className="text-lg font-semibold">Filtros de Busca</h3>
+        <h3 className="text-base md:text-lg font-semibold">Filtros de Busca</h3>
       </div>
       
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-2">
           <Label htmlFor="cnae" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             CNAE
@@ -54,7 +54,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             placeholder="Ex: 6201-5/01"
             value={filters.cnae}
             onChange={(e) => setFilters({ ...filters, cnae: e.target.value })}
-            className="h-11 bg-secondary/50 border-border/50 focus:border-primary transition-colors"
+            className="h-10 md:h-11 bg-secondary/50 border-border/50 focus:border-primary transition-colors"
           />
         </div>
 
@@ -66,7 +66,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             value={filters.city}
             onValueChange={(value) => setFilters({ ...filters, city: value })}
           >
-            <SelectTrigger className="h-11 bg-secondary/50 border-border/50">
+            <SelectTrigger className="h-10 md:h-11 bg-secondary/50 border-border/50">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
@@ -87,7 +87,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             value={filters.segment}
             onValueChange={(value) => setFilters({ ...filters, segment: value })}
           >
-            <SelectTrigger className="h-11 bg-secondary/50 border-border/50">
+            <SelectTrigger className="h-10 md:h-11 bg-secondary/50 border-border/50">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
@@ -103,18 +103,19 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
         <div className="flex items-end gap-2">
           <Button 
             onClick={handleSearch} 
-            className="flex-1 h-11 gap-2 gradient-primary hover:opacity-90 transition-opacity font-semibold"
+            className="flex-1 h-10 md:h-11 gap-2 gradient-primary hover:opacity-90 transition-opacity font-semibold"
             disabled={isLoading}
           >
             <Search className="h-4 w-4" />
-            {isLoading ? 'Buscando...' : 'Buscar'}
+            <span className="hidden sm:inline">{isLoading ? 'Buscando...' : 'Buscar'}</span>
+            <span className="sm:hidden">{isLoading ? '...' : ''}</span>
           </Button>
           {hasFilters && (
             <Button 
               variant="outline" 
               size="icon"
               onClick={handleClear}
-              className="h-11 w-11 border-border/50 hover:bg-secondary"
+              className="h-10 md:h-11 w-10 md:w-11 border-border/50 hover:bg-secondary shrink-0"
             >
               <X className="h-4 w-4" />
             </Button>

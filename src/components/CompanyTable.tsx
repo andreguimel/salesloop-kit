@@ -28,7 +28,6 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [isValidatingAll, setIsValidatingAll] = useState(false);
 
-  // Get all pending phone IDs across all companies
   const allPendingPhoneIds = useMemo(() => {
     return companies.flatMap(c => 
       c.phones.filter(p => p.status === 'pending' && p.id).map(p => p.id!)
@@ -114,7 +113,6 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
     }
   };
 
-  // Format phone number for display
   const formatPhone = (phone: string) => {
     const cleaned = phone.replace(/\D/g, '');
     if (cleaned.length === 11) {
@@ -125,7 +123,6 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
     return phone;
   };
 
-  // Format CNPJ for display
   const formatCnpj = (cnpj: string) => {
     const cleaned = cnpj.replace(/\D/g, '');
     if (cleaned.length === 14) {
@@ -136,7 +133,7 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
 
   if (companies.length === 0) {
     return (
-      <div className="p-16 rounded-2xl glass text-center animate-fade-up" style={{ animationDelay: '300ms' }}>
+      <div className="p-8 md:p-16 rounded-2xl glass text-center animate-fade-up" style={{ animationDelay: '300ms' }}>
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-secondary mb-4">
           <Building2 className="h-8 w-8 text-muted-foreground" />
         </div>
@@ -148,14 +145,15 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
 
   return (
     <div className="rounded-2xl glass overflow-hidden animate-fade-up" style={{ animationDelay: '300ms' }}>
-      <div className="p-5 border-b border-border/50 flex items-center justify-between">
+      {/* Header */}
+      <div className="p-4 md:p-5 border-b border-border/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg gradient-accent">
             <Building2 className="h-4 w-4 text-accent-foreground" />
           </div>
           <h3 className="text-lg font-semibold">Empresas</h3>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           {allPendingPhoneIds.length > 0 && (
             <Button
               variant="outline"
@@ -167,12 +165,14 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
               {isValidatingAll ? (
                 <>
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  Validando {allPendingPhoneIds.length}...
+                  <span className="hidden sm:inline">Validando {allPendingPhoneIds.length}...</span>
+                  <span className="sm:hidden">Validando...</span>
                 </>
               ) : (
                 <>
                   <CheckCircle className="h-3.5 w-3.5" />
-                  Validar todos ({allPendingPhoneIds.length})
+                  <span className="hidden sm:inline">Validar todos ({allPendingPhoneIds.length})</span>
+                  <span className="sm:hidden">Validar ({allPendingPhoneIds.length})</span>
                 </>
               )}
             </Button>
@@ -183,7 +183,103 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
         </div>
       </div>
       
-      <div className="overflow-x-auto">
+      {/* Mobile Card Layout */}
+      <div className="md:hidden divide-y divide-border/30">
+        {companies.map((company, index) => (
+          <div 
+            key={company.id}
+            className="p-4 space-y-3 animate-fade-up"
+            style={{ animationDelay: `${400 + index * 30}ms` }}
+          >
+            {/* Company Name & CNPJ */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-foreground truncate">{company.name}</h4>
+                {company.cnpj && (
+                  <code className="text-xs font-mono text-muted-foreground">
+                    {formatCnpj(company.cnpj)}
+                  </code>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCompanyToDelete(company)}
+                disabled={deletingCompanyId === company.id}
+                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+              >
+                {deletingCompanyId === company.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {/* CNAE */}
+            {company.cnae && (
+              <code className="text-xs font-mono px-2 py-1 rounded bg-secondary text-muted-foreground inline-block">
+                CNAE: {company.cnae}
+              </code>
+            )}
+
+            {/* Location */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                {company.city}, {company.state}
+              </div>
+              {company.address && (
+                <p className="text-xs text-muted-foreground line-clamp-2 pl-5">
+                  {company.address}
+                  {company.cep && ` - CEP: ${company.cep}`}
+                </p>
+              )}
+            </div>
+
+            {/* Phones */}
+            <div className="space-y-1.5">
+              {company.phones.length > 0 ? (
+                company.phones.map((phone) => (
+                  <div key={phone.number} className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-mono">{formatPhone(phone.number)}</span>
+                    <PhoneStatusBadge phone={phone} />
+                  </div>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground">Sem telefone</span>
+              )}
+            </div>
+
+            {/* Actions */}
+            {company.phones.some(p => p.status === 'pending') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleValidatePhones(company)}
+                disabled={validatingCompanyId === company.id}
+                className="w-full text-xs font-medium gap-1.5"
+              >
+                {validatingCompanyId === company.id ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                    Validando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-3 w-3" />
+                    Validar WhatsApp
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table Layout */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border/50 bg-secondary/30">
@@ -240,17 +336,6 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
                         {company.cep && ` - CEP: ${company.cep}`}
                       </div>
                     )}
-                  </div>
-                </td>
-                <td className="px-5 py-4">
-                  <code className="text-xs font-mono px-2 py-1 rounded bg-secondary text-muted-foreground">
-                    {company.cnae}
-                  </code>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {company.city}, {company.state}
                   </div>
                 </td>
                 <td className="px-5 py-4">
@@ -317,7 +402,7 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir empresa</AlertDialogTitle>
             <AlertDialogDescription>
@@ -325,11 +410,11 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
               Esta ação não pode ser desfeita e todos os telefones associados também serão removidos.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteCompany}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
             </AlertDialogAction>

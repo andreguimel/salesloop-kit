@@ -135,7 +135,7 @@ const SearchCompanies = () => {
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-8">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
@@ -143,12 +143,12 @@ const SearchCompanies = () => {
       </div>
 
       {/* Hero Section */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div className="space-y-3 animate-fade-up">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+      <div className="flex flex-col gap-4">
+        <div className="space-y-2 animate-fade-up">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">
             Buscar Empresas
           </h1>
-          <p className="text-muted-foreground max-w-xl">
+          <p className="text-sm md:text-base text-muted-foreground max-w-xl">
             Encontre empresas e valide telefones de forma automatizada.
           </p>
         </div>
@@ -158,18 +158,21 @@ const SearchCompanies = () => {
             <Button 
               onClick={() => setShowExportCsv(true)}
               variant="outline"
+              size="sm"
               className="gap-2 border-accent/30 hover:bg-accent/10"
             >
               <Download className="h-4 w-4" />
-              Exportar CSV
+              <span className="hidden sm:inline">Exportar CSV</span>
+              <span className="sm:hidden">CSV</span>
             </Button>
           )}
           <Button 
             onClick={() => setShowAddCompany(true)}
+            size="sm"
             className="gap-2 gradient-primary hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
-            Adicionar
+            <span className="hidden sm:inline">Adicionar</span>
           </Button>
         </div>
       </div>
