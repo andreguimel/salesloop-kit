@@ -54,16 +54,10 @@ export function CompanyTable({ companies, onCompanyDeleted, onCompanyEnriched }:
     return companies.filter(c => selectedIds.has(c.id));
   }, [companies, selectedIds]);
 
-  const notEnrichedSelectedCount = useMemo(() => {
-    return selectedCompanies.filter(c => !c.enrichedAt).length;
-  }, [selectedCompanies]);
+  // Count selected companies (all can be enriched/re-enriched)
+  const selectedCount = selectedCompanies.length;
 
   const handleEnrichCompany = async (company: Company) => {
-    if (company.enrichedAt) {
-      toast.info('Esta empresa já foi enriquecida');
-      return;
-    }
-
     setEnrichingCompanyId(company.id);
     
     try {
@@ -83,17 +77,15 @@ export function CompanyTable({ companies, onCompanyDeleted, onCompanyEnriched }:
   };
 
   const handleEnrichSelectedCompanies = async () => {
-    const companiesToEnrich = selectedCompanies.filter(c => !c.enrichedAt);
-    
-    if (companiesToEnrich.length === 0) {
-      toast.info('Todas as empresas selecionadas já foram enriquecidas');
+    if (selectedCompanies.length === 0) {
+      toast.info('Nenhuma empresa selecionada');
       return;
     }
 
     setIsEnrichingSelected(true);
     
     try {
-      const result = await enrichCompanies(companiesToEnrich);
+      const result = await enrichCompanies(selectedCompanies);
       
       if (result.success > 0) {
         toast.success(`${result.success} empresa${result.success > 1 ? 's' : ''} enriquecida${result.success > 1 ? 's' : ''}!`);
@@ -245,29 +237,27 @@ export function CompanyTable({ companies, onCompanyDeleted, onCompanyEnriched }:
         <div className="flex items-center gap-2 flex-wrap">
           {selectedIds.size > 0 && (
             <>
-              {notEnrichedSelectedCount > 0 && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleEnrichSelectedCompanies}
-                  disabled={isEnrichingSelected}
-                  className="gap-2 text-xs font-medium"
-                >
-                  {isEnrichingSelected ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span className="hidden sm:inline">Enriquecendo...</span>
-                      <span className="sm:hidden">IA...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Buscar com IA ({notEnrichedSelectedCount})</span>
-                      <span className="sm:hidden">IA ({notEnrichedSelectedCount})</span>
-                    </>
-                  )}
-                </Button>
-              )}
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleEnrichSelectedCompanies}
+                disabled={isEnrichingSelected}
+                className="gap-2 text-xs font-medium"
+              >
+                {isEnrichingSelected ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span className="hidden sm:inline">Enriquecendo...</span>
+                    <span className="sm:hidden">IA...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Buscar com IA ({selectedCount})</span>
+                    <span className="sm:hidden">IA ({selectedCount})</span>
+                  </>
+                )}
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
