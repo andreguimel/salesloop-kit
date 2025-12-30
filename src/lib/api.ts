@@ -348,6 +348,15 @@ export async function updatePhoneStatus(phoneId: string, status: string) {
   if (error) throw error;
 }
 
+export async function deletePhone(phoneId: string) {
+  const { error } = await supabase
+    .from('company_phones')
+    .delete()
+    .eq('id', phoneId);
+
+  if (error) throw error;
+}
+
 // Validate phones via Evolution API (WhatsApp check)
 export interface PhoneValidationResult {
   id: string;

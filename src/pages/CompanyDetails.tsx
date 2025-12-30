@@ -19,7 +19,9 @@ import {
   Clock,
   XCircle,
   Pencil,
-  ExternalLink
+  ExternalLink,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,8 +29,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { PhoneStatusBadge } from '@/components/PhoneStatusBadge';
 import { EditCompanyForm } from '@/components/EditCompanyForm';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { enrichCompany } from '@/lib/api';
+import { enrichCompany, addPhoneToCompany, deletePhone } from '@/lib/api';
 import { Company, Phone as PhoneType } from '@/types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -57,6 +61,13 @@ const CompanyDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEnriching, setIsEnriching] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Phone management state
+  const [isAddingPhone, setIsAddingPhone] = useState(false);
+  const [newPhoneNumber, setNewPhoneNumber] = useState('');
+  const [newPhoneType, setNewPhoneType] = useState<'mobile' | 'landline'>('mobile');
+  const [isSubmittingPhone, setIsSubmittingPhone] = useState(false);
+  const [deletingPhoneId, setDeletingPhoneId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -165,6 +176,44 @@ const CompanyDetails = () => {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
+  };
+
+  const handleAddPhone = async () => {
+    if (!company || !newPhoneNumber.trim()) return;
+    
+    setIsSubmittingPhone(true);
+    try {
+      const cleanedNumber = newPhoneNumber.replace(/\D/g, '');
+      if (cleanedNumber.length < 10 || cleanedNumber.length > 11) {
+        toast.error('Número de telefone inválido');
+        return;
+      }
+      
+      await addPhoneToCompany(company.id, cleanedNumber, newPhoneType, 'pending');
+      toast.success('Telefone adicionado com sucesso!');
+      setNewPhoneNumber('');
+      setIsAddingPhone(false);
+      loadCompanyData();
+    } catch (error) {
+      console.error('Error adding phone:', error);
+      toast.error('Erro ao adicionar telefone');
+    } finally {
+      setIsSubmittingPhone(false);
+    }
+  };
+
+  const handleDeletePhone = async (phoneId: string) => {
+    setDeletingPhoneId(phoneId);
+    try {
+      await deletePhone(phoneId);
+      toast.success('Telefone removido com sucesso!');
+      loadCompanyData();
+    } catch (error) {
+      console.error('Error deleting phone:', error);
+      toast.error('Erro ao remover telefone');
+    } finally {
+      setDeletingPhoneId(null);
+    }
   };
 
   const formatPhone = (phone: string) => {
@@ -398,19 +447,94 @@ const CompanyDetails = () => {
           <CardContent className="space-y-4">
             {/* Phones */}
             <div>
-              <span className="text-sm text-muted-foreground mb-2 block">Telefones</span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Telefones</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs h-7"
+                  onClick={() => setIsAddingPhone(!isAddingPhone)}
+                >
+                  <Plus className="h-3 w-3" />
+                  Adicionar
+                </Button>
+              </div>
+              
+              {/* Add phone form */}
+              {isAddingPhone && (
+                <div className="flex flex-col gap-2 p-3 rounded-md bg-muted/50 mb-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="(00) 00000-0000"
+                      value={newPhoneNumber}
+                      onChange={(e) => setNewPhoneNumber(e.target.value)}
+                      className="flex-1 h-8 text-sm"
+                    />
+                    <Select value={newPhoneType} onValueChange={(v) => setNewPhoneType(v as 'mobile' | 'landline')}>
+                      <SelectTrigger className="w-28 h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mobile">Celular</SelectItem>
+                        <SelectItem value="landline">Fixo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setIsAddingPhone(false);
+                        setNewPhoneNumber('');
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={handleAddPhone}
+                      disabled={isSubmittingPhone || !newPhoneNumber.trim()}
+                    >
+                      {isSubmittingPhone ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        'Salvar'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
               {company.phones.length > 0 ? (
                 <div className="space-y-2">
                   {company.phones.map((phone) => (
-                    <div key={phone.id || phone.number} className="flex items-center gap-2">
+                    <div key={phone.id || phone.number} className="flex items-center gap-2 group">
                       <Phone className="h-4 w-4 text-muted-foreground" />
                       <a 
                         href={`tel:${phone.number}`}
-                        className="font-mono text-sm hover:text-primary transition-colors"
+                        className="font-mono text-sm hover:text-primary transition-colors flex-1"
                       >
                         {formatPhone(phone.number)}
                       </a>
                       <PhoneStatusBadge phone={phone} />
+                      {phone.id && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDeletePhone(phone.id!)}
+                          disabled={deletingPhoneId === phone.id}
+                        >
+                          {deletingPhoneId === phone.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
