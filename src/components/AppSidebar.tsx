@@ -1,4 +1,5 @@
-import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings, Moon, Sun, Coins, FileText, Shield } from "lucide-react";
+import { useState, useEffect } from "react";
+import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings, Moon, Sun, Coins, FileText, Shield, ShieldCheck } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +9,7 @@ import { useOverdueTasks } from "@/hooks/useOverdueTasks";
 import { useCredits } from "@/hooks/useCredits";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 import {
   Sidebar,
@@ -40,6 +42,19 @@ export function AppSidebar() {
   const { count: overdueCount } = useOverdueTasks();
   const { balance, loading: creditsLoading, isLow, isCritical } = useCredits();
   const { theme, setTheme } = useTheme();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) return;
+      const { data } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
+      setIsAdmin(data === true);
+    };
+    checkAdmin();
+  }, [user]);
 
   const isActive = (path: string) => currentPath === path;
   const isDark = theme === "dark";
@@ -155,6 +170,36 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Admin Section */}
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs text-sidebar-foreground/50 uppercase tracking-wider">
+              {!collapsed && "Admin"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/admin")}
+                    tooltip="Painel Admin"
+                  >
+                    <NavLink
+                      to="/admin"
+                      end
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-sidebar-accent text-sidebar-foreground"
+                      activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                    >
+                      <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+                      {!collapsed && <span>Painel Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4 bg-sidebar space-y-2">
