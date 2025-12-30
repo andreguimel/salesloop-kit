@@ -206,6 +206,7 @@ const SearchCompanies = () => {
       <CompanyTable
         companies={filteredCompanies}
         onPhonesValidated={loadData}
+        onCompanyDeleted={loadData}
       />
 
       <AddCompanyDialog 
