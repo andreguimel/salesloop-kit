@@ -25,6 +25,13 @@ interface DbCompany {
   address: string | null;
   cep: string | null;
   segment: string | null;
+  website: string | null;
+  email: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  linkedin: string | null;
+  ai_summary: string | null;
+  enriched_at: string | null;
   company_phones: Array<{
     id: string;
     phone_number: string;
@@ -67,6 +74,13 @@ const SearchCompanies = () => {
         address: c.address || undefined,
         cep: c.cep || undefined,
         segment: c.segment || '',
+        website: c.website || undefined,
+        email: c.email || undefined,
+        instagram: c.instagram || undefined,
+        facebook: c.facebook || undefined,
+        linkedin: c.linkedin || undefined,
+        aiSummary: c.ai_summary || undefined,
+        enrichedAt: c.enriched_at || undefined,
         phones: c.company_phones.map((p) => ({
           id: p.id,
           number: p.phone_number,
@@ -210,6 +224,7 @@ const SearchCompanies = () => {
         companies={filteredCompanies}
         onPhonesValidated={loadData}
         onCompanyDeleted={loadData}
+        onCompanyEnriched={loadData}
       />
 
       <AddCompanyDialog 

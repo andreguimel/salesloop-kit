@@ -17,48 +17,69 @@ export type Database = {
       companies: {
         Row: {
           address: string | null
+          ai_summary: string | null
           cep: string | null
           city: string
           cnae: string
           cnae_description: string | null
           cnpj: string | null
           created_at: string
+          email: string | null
+          enriched_at: string | null
+          facebook: string | null
           id: string
+          instagram: string | null
+          linkedin: string | null
           name: string
           segment: string | null
           state: string
           updated_at: string
           user_id: string
+          website: string | null
         }
         Insert: {
           address?: string | null
+          ai_summary?: string | null
           cep?: string | null
           city: string
           cnae: string
           cnae_description?: string | null
           cnpj?: string | null
           created_at?: string
+          email?: string | null
+          enriched_at?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
+          linkedin?: string | null
           name: string
           segment?: string | null
           state: string
           updated_at?: string
           user_id: string
+          website?: string | null
         }
         Update: {
           address?: string | null
+          ai_summary?: string | null
           cep?: string | null
           city?: string
           cnae?: string
           cnae_description?: string | null
           cnpj?: string | null
           created_at?: string
+          email?: string | null
+          enriched_at?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
+          linkedin?: string | null
           name?: string
           segment?: string | null
           state?: string
           updated_at?: string
           user_id?: string
+          website?: string | null
         }
         Relationships: []
       }

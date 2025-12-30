@@ -494,3 +494,95 @@ export async function importCompanyFromSearch(searchResult: SearchCompanyResult)
 
   return company;
 }
+
+// Enrich company with AI (Firecrawl + Lovable AI)
+export interface EnrichmentResult {
+  website?: string;
+  email?: string;
+  instagram?: string;
+  facebook?: string;
+  linkedin?: string;
+  aiSummary?: string;
+}
+
+export interface EnrichCompanyResponse {
+  success: boolean;
+  companyId: string;
+  data?: EnrichmentResult;
+  error?: string;
+}
+
+export async function enrichCompany(company: Company): Promise<EnrichCompanyResponse> {
+  const { data, error } = await supabase.functions.invoke('enrich-company', {
+    body: {
+      company: {
+        id: company.id,
+        name: company.name,
+        cnpj: company.cnpj,
+        city: company.city,
+        state: company.state,
+        cnae: company.cnae,
+      },
+    },
+  });
+
+  if (error) {
+    console.error('Error enriching company:', error);
+    throw new Error(error.message || 'Erro ao enriquecer empresa');
+  }
+
+  if (!data.success) {
+    throw new Error(data.error || 'Erro ao enriquecer empresa');
+  }
+
+  // Update company in database with enriched data
+  if (data.data) {
+    const { error: updateError } = await supabase
+      .from('companies')
+      .update({
+        website: data.data.website,
+        email: data.data.email,
+        instagram: data.data.instagram,
+        facebook: data.data.facebook,
+        linkedin: data.data.linkedin,
+        ai_summary: data.data.aiSummary,
+        enriched_at: new Date().toISOString(),
+      })
+      .eq('id', company.id);
+
+    if (updateError) {
+      console.error('Error updating company with enriched data:', updateError);
+      throw new Error('Erro ao salvar dados enriquecidos');
+    }
+  }
+
+  return data;
+}
+
+export async function enrichCompanies(companies: Company[]): Promise<{
+  success: number;
+  failed: number;
+  results: EnrichCompanyResponse[];
+}> {
+  const results: EnrichCompanyResponse[] = [];
+  let success = 0;
+  let failed = 0;
+
+  for (const company of companies) {
+    try {
+      const result = await enrichCompany(company);
+      results.push(result);
+      success++;
+    } catch (error) {
+      console.error(`Error enriching company ${company.id}:`, error);
+      results.push({
+        success: false,
+        companyId: company.id,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+      failed++;
+    }
+  }
+
+  return { success, failed, results };
+}

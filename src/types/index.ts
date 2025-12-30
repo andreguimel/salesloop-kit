@@ -19,6 +19,14 @@ export interface Company {
   phones: Phone[];
   messageStatus?: 'sent' | 'not_delivered' | 'pending' | 'none';
   selectedPhones?: string[];
+  // Enrichment fields
+  website?: string;
+  email?: string;
+  instagram?: string;
+  facebook?: string;
+  linkedin?: string;
+  aiSummary?: string;
+  enrichedAt?: string;
 }
 
 export interface MessageTemplate {
