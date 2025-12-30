@@ -358,11 +358,14 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                     variant="outline"
                     role="combobox"
                     aria-expanded={cnaePopoverOpen}
-                    className="w-full justify-between font-normal h-auto min-h-10"
+                    className={cn(
+                      "w-full justify-between font-normal h-auto min-h-10 bg-secondary/50 border-border/50 hover:bg-secondary/80",
+                      selectedCnae && "border-primary/50 bg-primary/10"
+                    )}
                   >
                     {selectedCnae ? (
-                      <span className="truncate text-left">
-                        <span className="font-medium">{selectedCnae.id}</span> - {selectedCnae.descricao}
+                      <span className="truncate text-left text-foreground">
+                        <span className="font-medium text-primary">{selectedCnae.id}</span> - {selectedCnae.descricao}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">Selecione uma atividade...</span>
@@ -423,10 +426,10 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
               <div className="space-y-2">
                 <Label>UF</Label>
                 <Select value={uf || "all"} onValueChange={(val) => setUf(val === "all" ? "" : val)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-secondary/50 border-border/50 text-foreground">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-popover border-border">
                     <SelectItem value="all">Todos</SelectItem>
                     {UF_LIST.map((state) => (
                       <SelectItem key={state} value={state}>{state}</SelectItem>
@@ -442,6 +445,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                   value={cidade}
                   onChange={(e) => setCidade(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="bg-secondary/50 border-border/50"
                 />
               </div>
             </div>
