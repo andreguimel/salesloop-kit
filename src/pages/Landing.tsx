@@ -1,12 +1,9 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Sparkles, 
   Search, 
   Target, 
   Zap, 
   TrendingUp, 
-  Users, 
   Building2, 
   Phone, 
   Mail, 
@@ -20,15 +17,14 @@ import {
   Globe,
   MessageSquare,
   ChevronRight,
-  Play
+  Play,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 const Landing = () => {
-  const [activeTab, setActiveTab] = useState(0);
-
   const features = [
     {
       icon: Search,
@@ -60,30 +56,39 @@ const Landing = () => {
     { name: 'Academia Fitness Pro', segment: 'Saúde e Fitness', city: 'Porto Alegre', phone: '(51) 9****-0123', email: 'info@fitne***.com.br' },
   ];
 
+  // Pacotes reais do sistema
   const plans = [
     {
       name: 'Starter',
       credits: 100,
       bonus: 0,
-      price: 49.90,
+      price: 25,
       popular: false,
       features: ['100 leads qualificados', 'Dados completos', 'Suporte por e-mail', 'Exportação CSV'],
     },
     {
-      name: 'Profissional',
-      credits: 500,
-      bonus: 50,
-      price: 197.90,
+      name: 'Pro',
+      credits: 200,
+      bonus: 30,
+      price: 50,
       popular: true,
-      features: ['500 + 50 leads bônus', 'CRM integrado', 'Suporte prioritário', 'Exportação ilimitada', 'Enriquecimento IA'],
+      features: ['200 + 30 leads bônus', 'CRM integrado', 'Suporte prioritário', 'Exportação ilimitada', 'Enriquecimento IA'],
     },
     {
-      name: 'Enterprise',
-      credits: 2000,
-      bonus: 500,
-      price: 697.90,
+      name: 'Business',
+      credits: 400,
+      bonus: 100,
+      price: 100,
       popular: false,
-      features: ['2000 + 500 leads bônus', 'API de integração', 'Suporte dedicado', 'Dashboard avançado', 'Relatórios personalizados'],
+      features: ['400 + 100 leads bônus', 'Suporte dedicado', 'Dashboard avançado', 'Relatórios personalizados'],
+    },
+    {
+      name: 'Agency',
+      credits: 1200,
+      bonus: 500,
+      price: 300,
+      popular: false,
+      features: ['1200 + 500 leads bônus', 'API de integração', 'Suporte VIP', 'Multi-usuários', 'White label'],
     },
   ];
 
@@ -125,9 +130,9 @@ const Landing = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl gradient-primary">
-              <Sparkles className="h-6 w-6 text-primary-foreground" />
+              <Search className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-gradient">LeadHub</span>
+            <span className="text-xl font-bold text-gradient">Achei Leads</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Recursos</a>
@@ -268,7 +273,7 @@ const Landing = () => {
                 <div className="flex-1 flex justify-center">
                   <div className="bg-background/50 rounded-lg px-4 py-1.5 text-sm text-muted-foreground flex items-center gap-2">
                     <Globe className="h-4 w-4" />
-                    leadhub.app/buscar
+                    acheileads.com.br/buscar
                   </div>
                 </div>
               </div>
@@ -446,7 +451,7 @@ const Landing = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {plans.map((plan, index) => (
               <Card 
                 key={index} 
@@ -579,17 +584,17 @@ const Landing = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl gradient-primary">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
+                <Search className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-lg font-bold text-gradient">LeadHub</span>
+              <span className="text-lg font-bold text-gradient">Achei Leads</span>
             </div>
             <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
               <Link to="/termos-de-uso" className="hover:text-foreground transition-colors">Termos de Uso</Link>
               <Link to="/politica-privacidade" className="hover:text-foreground transition-colors">Política de Privacidade</Link>
-              <a href="mailto:contato@leadhub.app" className="hover:text-foreground transition-colors">Contato</a>
+              <a href="mailto:contato@acheileads.com.br" className="hover:text-foreground transition-colors">Contato</a>
             </div>
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} LeadHub. Todos os direitos reservados.
+              © {new Date().getFullYear()} Achei Leads. Todos os direitos reservados.
             </p>
           </div>
         </div>
