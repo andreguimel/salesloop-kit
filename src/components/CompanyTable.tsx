@@ -494,7 +494,11 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
                 <td className="px-4 py-3">
                   {company.phones.length > 0 ? (
                     <div className="flex items-center gap-2">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      {company.phones[0].status === 'valid' ? (
+                        <MessageCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                      ) : (
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      )}
                       <span className="text-sm font-mono">{formatPhone(company.phones[0].number)}</span>
                       {company.phones.length > 1 && (
                         <span className="text-xs text-muted-foreground">+{company.phones.length - 1}</span>
