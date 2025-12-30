@@ -34,15 +34,20 @@ export function PhoneStatusBadge({ phone, showNumber = true }: PhoneStatusBadgeP
   const config = statusConfig[phone.status];
   const Icon = config.icon;
 
+  // Don't show badge for pending status - it doesn't add value
+  const showBadge = phone.status !== 'pending';
+
   return (
     <div className="flex items-center gap-2">
       {showNumber && (
         <span className="text-sm font-medium text-foreground">{phone.number}</span>
       )}
-      <Badge variant={config.variant} className="gap-1 font-medium">
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
+      {showBadge && (
+        <Badge variant={config.variant} className="gap-1 font-medium">
+          <Icon className="h-3 w-3" />
+          {config.label}
+        </Badge>
+      )}
     </div>
   );
 }
