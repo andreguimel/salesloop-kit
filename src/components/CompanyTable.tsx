@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { MapPin, Building2, RefreshCw, CheckCircle, Phone, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PhoneStatusBadge } from './PhoneStatusBadge';
 import { Company } from '@/types';
 import { validatePhones, deleteCompany } from '@/lib/api';
@@ -27,6 +28,9 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
   const [deletingCompanyId, setDeletingCompanyId] = useState<string | null>(null);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [isValidatingAll, setIsValidatingAll] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   const allPendingPhoneIds = useMemo(() => {
     return companies.flatMap(c => 
@@ -101,6 +105,11 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
     try {
       await deleteCompany(companyToDelete.id);
       toast.success('Empresa excluída com sucesso');
+      setSelectedIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(companyToDelete.id);
+        return newSet;
+      });
       onCompanyDeleted?.();
     } catch (error) {
       console.error('Error deleting company:', error);
@@ -111,6 +120,58 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
       setDeletingCompanyId(null);
       setCompanyToDelete(null);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    
+    setIsDeleting(true);
+    const idsToDelete = Array.from(selectedIds);
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const id of idsToDelete) {
+      try {
+        await deleteCompany(id);
+        successCount++;
+      } catch (error) {
+        console.error(`Error deleting company ${id}:`, error);
+        errorCount++;
+      }
+    }
+    
+    setIsDeleting(false);
+    setShowBulkDeleteDialog(false);
+    setSelectedIds(new Set());
+    
+    if (successCount > 0) {
+      toast.success(`${successCount} empresa${successCount > 1 ? 's' : ''} excluída${successCount > 1 ? 's' : ''}`);
+    }
+    if (errorCount > 0) {
+      toast.error(`Falha ao excluir ${errorCount} empresa${errorCount > 1 ? 's' : ''}`);
+    }
+    
+    onCompanyDeleted?.();
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === companies.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(companies.map(c => c.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
   };
 
   const formatPhone = (phone: string) => {
@@ -154,6 +215,23 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
           <h3 className="text-lg font-semibold">Empresas</h3>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {selectedIds.size > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowBulkDeleteDialog(true)}
+              disabled={isDeleting}
+              className="gap-2 text-xs font-medium"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden sm:inline">Excluir selecionadas ({selectedIds.size})</span>
+              <span className="sm:hidden">Excluir ({selectedIds.size})</span>
+            </Button>
+          )}
           {allPendingPhoneIds.length > 0 && (
             <Button
               variant="outline"
@@ -193,13 +271,20 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
           >
             {/* Company Name & CNPJ */}
             <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-foreground truncate">{company.name}</h4>
-                {company.cnpj && (
-                  <code className="text-xs font-mono text-muted-foreground">
-                    {formatCnpj(company.cnpj)}
-                  </code>
-                )}
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <Checkbox
+                  checked={selectedIds.has(company.id)}
+                  onCheckedChange={() => toggleSelect(company.id)}
+                  className="mt-1"
+                />
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-foreground truncate">{company.name}</h4>
+                  {company.cnpj && (
+                    <code className="text-xs font-mono text-muted-foreground">
+                      {formatCnpj(company.cnpj)}
+                    </code>
+                  )}
+                </div>
               </div>
               <Button
                 variant="ghost"
@@ -283,6 +368,12 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
         <table className="w-full">
           <thead>
             <tr className="border-b border-border/50 bg-secondary/30">
+              <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4 w-12">
+                <Checkbox
+                  checked={selectedIds.size === companies.length && companies.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </th>
               <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4">
                 Empresa
               </th>
@@ -304,9 +395,15 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
             {companies.map((company, index) => (
               <tr 
                 key={company.id}
-                className="hover:bg-secondary/20 transition-colors animate-fade-up"
+                className={`hover:bg-secondary/20 transition-colors animate-fade-up ${selectedIds.has(company.id) ? 'bg-primary/5' : ''}`}
                 style={{ animationDelay: `${400 + index * 50}ms` }}
               >
+                <td className="px-5 py-4 w-12">
+                  <Checkbox
+                    checked={selectedIds.has(company.id)}
+                    onCheckedChange={() => toggleSelect(company.id)}
+                  />
+                </td>
                 <td className="px-5 py-4">
                   <div className="font-semibold text-foreground">{company.name}</div>
                   {company.cnae && (
@@ -417,6 +514,36 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
               className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selectedIds.size} empresa{selectedIds.size > 1 ? 's' : ''}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{selectedIds.size}</strong> empresa{selectedIds.size > 1 ? 's' : ''}?
+              Esta ação não pode ser desfeita e todos os telefones associados também serão removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto" disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                `Excluir ${selectedIds.size}`
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
