@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Search, Phone, Globe, Star, Download, Loader2, Building2 } from 'lucide-react';
+import { MapPin, Search, Phone, Globe, Star, Download, Loader2, Building2, Coins } from 'lucide-react';
 import { toast } from 'sonner';
 import { searchGoogleMaps, importCompanyFromGoogleMaps, GoogleMapsCompany } from '@/lib/api';
+import { useCredits } from '@/hooks/useCredits';
 
 interface SearchGoogleMapsDialogProps {
   onCompaniesImported: () => void;
@@ -69,6 +70,7 @@ export function SearchGoogleMapsDialog({ onCompaniesImported }: SearchGoogleMaps
   const [results, setResults] = useState<GoogleMapsCompany[]>([]);
   const [importedCompanies, setImportedCompanies] = useState<Set<string>>(new Set());
   const [importingAll, setImportingAll] = useState(false);
+  const { balance, consumeCredits } = useCredits();
 
   const handleSearch = async () => {
     if (!query.trim()) {
@@ -113,10 +115,23 @@ export function SearchGoogleMapsDialog({ onCompaniesImported }: SearchGoogleMaps
   };
 
   const handleImport = async (company: GoogleMapsCompany) => {
+    // Check credits
+    if (balance < 1) {
+      toast.error('Créditos insuficientes. Compre mais créditos.');
+      return;
+    }
+
     try {
+      // Consume 1 credit
+      const success = await consumeCredits(1, `Importação: ${cleanCompanyName(company.name)}`);
+      if (!success) {
+        toast.error('Erro ao consumir crédito');
+        return;
+      }
+
       await importCompanyFromGoogleMaps(company);
       setImportedCompanies(prev => new Set(prev).add(company.name));
-      toast.success(`${cleanCompanyName(company.name)} importada`);
+      toast.success(`${cleanCompanyName(company.name)} importada. 1 crédito consumido.`);
       onCompaniesImported();
     } catch (error) {
       console.error('Import error:', error);
@@ -131,20 +146,21 @@ export function SearchGoogleMapsDialog({ onCompaniesImported }: SearchGoogleMaps
       return;
     }
 
+    if (balance < toImport.length) {
+      toast.error(`Créditos insuficientes. Necessário: ${toImport.length}, Saldo: ${balance}`);
+      return;
+    }
+
     setImportingAll(true);
     let imported = 0;
 
     for (const company of toImport) {
-      try {
-        await importCompanyFromGoogleMaps(company);
-        setImportedCompanies(prev => new Set(prev).add(company.name));
-        imported++;
-      } catch (error) {
-        console.error(`Error importing ${company.name}:`, error);
-      }
+      if (balance < 1) break;
+      await handleImport(company);
+      imported++;
     }
 
-    toast.success(`${imported} empresas importadas`);
+    toast.success(`${imported} empresas importadas. ${imported} créditos consumidos.`);
     onCompaniesImported();
     setImportingAll(false);
   };
@@ -201,25 +217,31 @@ export function SearchGoogleMapsDialog({ onCompaniesImported }: SearchGoogleMaps
 
           {/* Results Header */}
           {results.length > 0 && (
-            <div className="flex items-center justify-between border-b pb-2">
-              <span className="text-sm font-medium">
-                {results.length} empresas encontradas
-              </span>
-              {notImportedCount > 0 && (
-                <Button
-                  size="sm"
-                  onClick={handleImportAll}
-                  disabled={importingAll}
-                  className="gap-2"
-                >
-                  {importingAll ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
-                  )}
-                  Importar Todas ({notImportedCount})
-                </Button>
-              )}
+            <div className="flex flex-col gap-2 border-b pb-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  {results.length} empresas encontradas
+                </span>
+                {notImportedCount > 0 && (
+                  <Button
+                    size="sm"
+                    onClick={handleImportAll}
+                    disabled={importingAll || balance < notImportedCount}
+                    className="gap-2"
+                  >
+                    {importingAll ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    Importar Todas ({notImportedCount})
+                  </Button>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Coins className="h-3 w-3" />
+                <span>Custo: 1 crédito/empresa | Saldo: {balance}</span>
+              </div>
             </div>
           )}
 
@@ -285,8 +307,9 @@ export function SearchGoogleMapsDialog({ onCompaniesImported }: SearchGoogleMaps
                           variant={importedCompanies.has(company.name) ? "secondary" : "outline"}
                           size="sm"
                           onClick={() => handleImport(company)}
-                          disabled={importedCompanies.has(company.name)}
+                          disabled={importedCompanies.has(company.name) || balance < 1}
                           className="shrink-0"
+                          title={balance < 1 ? 'Saldo insuficiente' : ''}
                         >
                           {importedCompanies.has(company.name) ? '✓' : 'Importar'}
                         </Button>

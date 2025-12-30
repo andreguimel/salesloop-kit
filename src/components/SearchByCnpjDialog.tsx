@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Building2, MapPin, Phone as PhoneIcon, Loader2, Plus, Check, Info } from 'lucide-react';
+import { Search, Building2, MapPin, Phone as PhoneIcon, Loader2, Plus, Check, Info, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { searchCompanyByCnpj, importCompanyFromSearch, SearchCompanyResult } from '@/lib/api';
+import { useCredits } from '@/hooks/useCredits';
 
 interface SearchByCnpjDialogProps {
   open: boolean;
@@ -51,6 +52,7 @@ export function SearchByCnpjDialog({ open, onOpenChange, onCompanyImported }: Se
   const [imported, setImported] = useState(false);
   
   const { toast } = useToast();
+  const { balance, consumeCredits } = useCredits();
 
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCnpj(e.target.value);
@@ -98,14 +100,35 @@ export function SearchByCnpjDialog({ open, onOpenChange, onCompanyImported }: Se
   const handleImport = async () => {
     if (!result) return;
     
+    // Check credits
+    if (balance < 1) {
+      toast({
+        title: 'Créditos insuficientes',
+        description: 'Você precisa de pelo menos 1 crédito para importar. Compre mais créditos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setImporting(true);
 
     try {
+      // Consume 1 credit
+      const success = await consumeCredits(1, `Importação: ${result.fantasyName || result.name}`);
+      if (!success) {
+        toast({
+          title: 'Erro ao consumir crédito',
+          description: 'Não foi possível descontar o crédito.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       await importCompanyFromSearch(result);
       setImported(true);
       toast({
         title: 'Empresa importada!',
-        description: `${result.fantasyName || result.name} foi adicionada à sua lista.`,
+        description: `${result.fantasyName || result.name} foi adicionada. 1 crédito consumido.`,
       });
       onCompanyImported();
     } catch (error) {
@@ -182,6 +205,11 @@ export function SearchByCnpjDialog({ open, onOpenChange, onCompanyImported }: Se
               Consulta os dados oficiais da Receita Federal em tempo real via CNPJá
             </p>
           </div>
+          
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Coins className="h-3 w-3" />
+            <span>Custo: 1 crédito para importar | Saldo: {balance}</span>
+          </div>
         </div>
 
         {/* Result */}
@@ -204,8 +232,9 @@ export function SearchByCnpjDialog({ open, onOpenChange, onCompanyImported }: Se
               <Button
                 size="sm"
                 onClick={handleImport}
-                disabled={importing || imported}
+                disabled={importing || imported || balance < 1}
                 className={imported ? 'bg-green-600 hover:bg-green-600' : 'gradient-primary'}
+                title={balance < 1 ? 'Saldo insuficiente' : ''}
               >
                 {importing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
