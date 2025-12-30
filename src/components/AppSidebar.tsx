@@ -44,7 +44,7 @@ export function AppSidebar() {
             </div>
             {!collapsed && (
               <div>
-                <h1 className="font-bold text-lg">ProspectPro</h1>
+                <h1 className="font-bold text-lg">Achei Leads</h1>
                 <p className="text-xs text-muted-foreground">Prospecção Inteligente</p>
               </div>
             )}
