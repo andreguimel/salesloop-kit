@@ -27,9 +27,9 @@ serve(async (req) => {
 
     const baseUrl = 'https://consulta.thelostworld.space';
     
-    // Try to extract just the main CNAE code (first 4 digits) if full code doesn't work
-    // Format: "6209-1/00" -> try both "6209-1/00" and "6209"
-    const cnaeClean = cnae.trim();
+    // Remove formatting from CNAE - keep only digits
+    // "6209-1/00" -> "6209100"
+    const cnaeClean = cnae.trim().replace(/[-\/]/g, '');
     
     // Build URL with optional filters
     let searchUrl = `${baseUrl}/empresas?cnae=${encodeURIComponent(cnaeClean)}`;
