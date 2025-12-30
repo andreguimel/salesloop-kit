@@ -61,12 +61,15 @@ const CRM = () => {
 
   const handleMoveCompany = async (companyId: string, newStageId: string) => {
     try {
+      const company = companies.find(c => c.id === companyId);
+      const currentStageId = company?.crmStageId;
+      
       // Optimistic update
       setCompanies(prev => prev.map(c => 
         c.id === companyId ? { ...c, crmStageId: newStageId } : c
       ));
       
-      await updateCompanyCrmStage(companyId, newStageId);
+      await updateCompanyCrmStage(companyId, newStageId, stages, currentStageId);
       
       // Reload metrics
       const metricsData = await fetchCrmMetrics();
@@ -108,7 +111,7 @@ const CRM = () => {
       // Move companies from this stage to unassigned
       const companiesInStage = companies.filter(c => c.crmStageId === id);
       for (const company of companiesInStage) {
-        await updateCompanyCrmStage(company.id, null as unknown as string);
+        await updateCompanyCrmStage(company.id, null as unknown as string, stages, company.crmStageId);
       }
       
       await deletePipelineStage(id);

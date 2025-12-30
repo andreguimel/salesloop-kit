@@ -92,15 +92,44 @@ export async function reorderPipelineStages(stages: { id: string; position: numb
 }
 
 // Company CRM Updates
-export async function updateCompanyCrmStage(companyId: string, stageId: string | null): Promise<void> {
+export async function updateCompanyCrmStage(
+  companyId: string, 
+  newStageId: string | null, 
+  stages: PipelineStage[],
+  currentStageId?: string | null
+): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) throw new Error('Usuário não autenticado');
+
+  // Update company stage
   const { error } = await supabase
     .from('companies')
-    .update({ crm_stage_id: stageId })
+    .update({ crm_stage_id: newStageId })
     .eq('id', companyId);
 
   if (error) {
     console.error('Error updating company CRM stage:', error);
     throw new Error('Erro ao atualizar estágio da empresa');
+  }
+
+  // Record stage change in history
+  const fromStage = stages.find(s => s.id === currentStageId);
+  const toStage = stages.find(s => s.id === newStageId);
+
+  const { error: historyError } = await supabase
+    .from('crm_stage_history')
+    .insert({
+      company_id: companyId,
+      user_id: userData.user.id,
+      from_stage_id: currentStageId || null,
+      to_stage_id: newStageId,
+      from_stage_name: fromStage?.name || null,
+      to_stage_name: toStage?.name || null,
+    });
+
+  if (historyError) {
+    console.error('Error recording stage history:', historyError);
+    // Don't throw - history is secondary to the main operation
   }
 }
 

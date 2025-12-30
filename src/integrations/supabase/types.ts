@@ -218,6 +218,67 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_stage_history: {
+        Row: {
+          changed_at: string
+          company_id: string
+          created_at: string
+          from_stage_id: string | null
+          from_stage_name: string | null
+          id: string
+          notes: string | null
+          to_stage_id: string | null
+          to_stage_name: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          company_id: string
+          created_at?: string
+          from_stage_id?: string | null
+          from_stage_name?: string | null
+          id?: string
+          notes?: string | null
+          to_stage_id?: string | null
+          to_stage_name?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          company_id?: string
+          created_at?: string
+          from_stage_id?: string | null
+          from_stage_name?: string | null
+          id?: string
+          notes?: string | null
+          to_stage_id?: string | null
+          to_stage_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_stage_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_stage_history_from_stage_id_fkey"
+            columns: ["from_stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_stage_history_to_stage_id_fkey"
+            columns: ["to_stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_history: {
         Row: {
           channel: string

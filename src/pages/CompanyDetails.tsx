@@ -14,7 +14,7 @@ import {
   Loader2,
   Calendar,
   FileText,
-  MessageSquare,
+  History,
   CheckCircle,
   Clock,
   XCircle,
@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PhoneStatusBadge } from '@/components/PhoneStatusBadge';
+import { CrmStageHistory } from '@/components/CrmStageHistory';
 import { EditCompanyForm } from '@/components/EditCompanyForm';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -38,26 +39,11 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface MessageHistory {
-  id: string;
-  channel: string;
-  message_content: string;
-  status: string;
-  sent_at: string | null;
-  created_at: string;
-  company_phones: {
-    phone_number: string;
-  } | null;
-  message_templates: {
-    name: string;
-  } | null;
-}
 
 const CompanyDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [company, setCompany] = useState<Company | null>(null);
-  const [messages, setMessages] = useState<MessageHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnriching, setIsEnriching] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -126,24 +112,6 @@ const CompanyDetails = () => {
 
       setCompany(mappedCompany);
 
-      // Fetch message history
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('message_history')
-        .select(`
-          id,
-          channel,
-          message_content,
-          status,
-          sent_at,
-          created_at,
-          company_phones (phone_number),
-          message_templates (name)
-        `)
-        .eq('company_id', id)
-        .order('created_at', { ascending: false });
-
-      if (messagesError) throw messagesError;
-      setMessages(messagesData || []);
 
     } catch (error) {
       console.error('Error loading company:', error);
@@ -633,65 +601,8 @@ const CompanyDetails = () => {
         </Card>
       )}
 
-      {/* Message History Card */}
-      <Card className="glass animate-fade-up" style={{ animationDelay: '200ms' }}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            Histórico de Mensagens
-          </CardTitle>
-          <CardDescription>
-            {messages.length} mensagem{messages.length !== 1 ? 's' : ''} enviada{messages.length !== 1 ? 's' : ''}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {messages.length > 0 ? (
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div 
-                  key={message.id}
-                  className="p-4 rounded-lg bg-secondary/30 border border-border/30 space-y-2"
-                >
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(message.status)}
-                      <span className="text-sm font-medium">{getStatusLabel(message.status)}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {message.channel === 'whatsapp' ? 'WhatsApp' : 'SMS'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {format(new Date(message.sent_at || message.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="h-3.5 w-3.5" />
-                    {message.company_phones?.phone_number ? formatPhone(message.company_phones.phone_number) : 'N/A'}
-                    {message.message_templates?.name && (
-                      <>
-                        <span className="mx-1">•</span>
-                        <FileText className="h-3.5 w-3.5" />
-                        {message.message_templates.name}
-                      </>
-                    )}
-                  </div>
-                  
-                  <p className="text-sm bg-background/50 p-3 rounded border border-border/20">
-                    {message.message_content}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-50" />
-              <p>Nenhuma mensagem enviada para esta empresa</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* CRM Stage History */}
+      <CrmStageHistory companyId={company.id} />
         </>
       )}
     </div>
