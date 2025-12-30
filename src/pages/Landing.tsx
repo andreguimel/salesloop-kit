@@ -86,7 +86,15 @@ const Landing = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Pacotes reais do sistema
+  // Pacotes reais do sistema - todos com as mesmas features, apenas créditos/bônus diferentes
+  const sharedFeatures = [
+    'Dados completos',
+    'CRM integrado',
+    'Enriquecimento IA',
+    'Exportação CSV',
+    'Suporte por e-mail',
+  ];
+
   const plans = [
     {
       name: 'Starter',
@@ -94,7 +102,6 @@ const Landing = () => {
       bonus: 0,
       price: 25,
       popular: false,
-      features: ['100 leads qualificados', 'Dados completos', 'Suporte por e-mail', 'Exportação CSV'],
     },
     {
       name: 'Pro',
@@ -102,7 +109,6 @@ const Landing = () => {
       bonus: 30,
       price: 50,
       popular: true,
-      features: ['200 + 30 leads bônus', 'CRM integrado', 'Suporte prioritário', 'Exportação ilimitada', 'Enriquecimento IA'],
     },
     {
       name: 'Business',
@@ -110,7 +116,6 @@ const Landing = () => {
       bonus: 100,
       price: 100,
       popular: false,
-      features: ['400 + 100 leads bônus', 'Suporte dedicado', 'Dashboard avançado', 'Relatórios personalizados'],
     },
     {
       name: 'Agency',
@@ -118,7 +123,6 @@ const Landing = () => {
       bonus: 500,
       price: 300,
       popular: false,
-      features: ['1200 + 500 leads bônus', 'API de integração', 'Suporte VIP', 'Multi-usuários', 'White label'],
     },
   ];
 
@@ -535,7 +539,11 @@ const Landing = () => {
                   </div>
 
                   <ul className="space-y-3">
-                    {plan.features.map((feature, i) => (
+                    <li className="flex items-center gap-2 text-sm">
+                      <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+                      <span>{plan.credits.toLocaleString()}{plan.bonus > 0 ? ` + ${plan.bonus} leads bônus` : ' leads qualificados'}</span>
+                    </li>
+                    {sharedFeatures.map((feature, i) => (
                       <li key={i} className="flex items-center gap-2 text-sm">
                         <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
                         <span>{feature}</span>
