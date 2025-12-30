@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Target, DollarSign, ClipboardList, TrendingUp } from 'lucide-react';
+import { Loader2, Target, DollarSign, ClipboardList, TrendingUp, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
 import { ActivityList } from '@/components/crm/ActivityList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +28,7 @@ const CRM = () => {
   const [activities, setActivities] = useState<CrmActivity[]>([]);
   const [metrics, setMetrics] = useState<CrmMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showActivities, setShowActivities] = useState(true);
 
   useEffect(() => {
     loadData();
@@ -287,15 +289,40 @@ const CRM = () => {
           />
         </div>
 
-        {/* Activity Sidebar - fixed width */}
-        <div className="w-full lg:w-[350px] flex-shrink-0 animate-fade-up" style={{ animationDelay: '150ms' }}>
-          <ActivityList
-            activities={activities}
-            companies={companies}
-            onCreateActivity={handleCreateActivity}
-            onUpdateActivity={handleUpdateActivity}
-            onDeleteActivity={handleDeleteActivity}
-          />
+        {/* Activity Sidebar - collapsible */}
+        <div className={`flex-shrink-0 transition-all duration-300 ${showActivities ? 'w-full lg:w-[350px]' : 'w-auto'}`}>
+          {showActivities ? (
+            <div className="animate-fade-up" style={{ animationDelay: '150ms' }}>
+              <div className="flex items-center justify-end mb-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowActivities(false)}
+                  className="gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  <PanelRightClose className="h-4 w-4" />
+                  Ocultar
+                </Button>
+              </div>
+              <ActivityList
+                activities={activities}
+                companies={companies}
+                onCreateActivity={handleCreateActivity}
+                onUpdateActivity={handleUpdateActivity}
+                onDeleteActivity={handleDeleteActivity}
+              />
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowActivities(true)}
+              className="h-10 w-10"
+              title="Mostrar atividades"
+            >
+              <PanelRightOpen className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
