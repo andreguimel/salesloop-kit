@@ -17,13 +17,15 @@ import {
   MessageSquare,
   CheckCircle,
   Clock,
-  XCircle
+  XCircle,
+  Pencil
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PhoneStatusBadge } from '@/components/PhoneStatusBadge';
+import { EditCompanyForm } from '@/components/EditCompanyForm';
 import { supabase } from '@/integrations/supabase/client';
 import { enrichCompany } from '@/lib/api';
 import { Company, Phone as PhoneType } from '@/types';
@@ -53,6 +55,7 @@ const CompanyDetails = () => {
   const [messages, setMessages] = useState<MessageHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnriching, setIsEnriching] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -154,6 +157,15 @@ const CompanyDetails = () => {
     }
   };
 
+  const handleSaveEdit = () => {
+    setIsEditing(false);
+    loadCompanyData();
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
   const formatPhone = (phone: string) => {
     const cleaned = phone.replace(/\D/g, '');
     if (cleaned.length === 11) {
@@ -241,34 +253,55 @@ const CompanyDetails = () => {
             )}
           </div>
           
-          {!company.enrichedAt ? (
-            <Button
-              onClick={handleEnrich}
-              disabled={isEnriching}
-              className="gap-2 gradient-primary hover:opacity-90"
-            >
-              {isEnriching ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Buscando...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Buscar com IA
-                </>
-              )}
-            </Button>
-          ) : (
-            <Badge variant="secondary" className="gap-1.5 px-3 py-1.5">
-              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-              Enriquecido em {format(new Date(company.enrichedAt), "dd/MM/yyyy", { locale: ptBR })}
-            </Badge>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {!isEditing && (
+              <Button
+                variant="outline"
+                onClick={() => setIsEditing(true)}
+                className="gap-2"
+              >
+                <Pencil className="h-4 w-4" />
+                Editar
+              </Button>
+            )}
+            
+            {!company.enrichedAt && !isEditing ? (
+              <Button
+                onClick={handleEnrich}
+                disabled={isEnriching}
+                className="gap-2 gradient-primary hover:opacity-90"
+              >
+                {isEnriching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Buscando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Buscar com IA
+                  </>
+                )}
+              </Button>
+            ) : company.enrichedAt && !isEditing ? (
+              <Badge variant="secondary" className="gap-1.5 px-3 py-1.5">
+                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                Enriquecido em {format(new Date(company.enrichedAt), "dd/MM/yyyy", { locale: ptBR })}
+              </Badge>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      {isEditing ? (
+        <EditCompanyForm 
+          company={company} 
+          onSave={handleSaveEdit} 
+          onCancel={handleCancelEdit} 
+        />
+      ) : (
+        <>
+          <div className="grid gap-6 md:grid-cols-2">
         {/* Company Info Card */}
         <Card className="glass animate-fade-up" style={{ animationDelay: '50ms' }}>
           <CardHeader>
@@ -494,6 +527,8 @@ const CompanyDetails = () => {
           )}
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 };
