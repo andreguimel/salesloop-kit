@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Target, DollarSign, ClipboardList, TrendingUp, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Loader2, Target, DollarSign, ClipboardList, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
 import { ActivityList } from '@/components/crm/ActivityList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
 import { Company, PipelineStage, CrmActivity } from '@/types';
 import {
   fetchPipelineStages,
@@ -28,7 +30,7 @@ const CRM = () => {
   const [activities, setActivities] = useState<CrmActivity[]>([]);
   const [metrics, setMetrics] = useState<CrmMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showActivities, setShowActivities] = useState(true);
+  const [showActivities, setShowActivities] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -274,56 +276,49 @@ const CRM = () => {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Kanban Board - scrollable container */}
-        <div className="flex-1 min-w-0 overflow-x-auto animate-fade-up" style={{ animationDelay: '100ms' }}>
-          <KanbanBoard
-            stages={stages}
-            companies={companies}
-            onMoveCompany={handleMoveCompany}
-            onCreateStage={handleCreateStage}
-            onUpdateStage={handleUpdateStage}
-            onDeleteStage={handleDeleteStage}
-            onUpdateDealValue={handleUpdateDealValue}
-          />
-        </div>
-
-        {/* Activity Sidebar - collapsible */}
-        <div className={`flex-shrink-0 transition-all duration-300 ${showActivities ? 'w-full lg:w-[350px]' : 'w-auto'}`}>
-          {showActivities ? (
-            <div className="animate-fade-up" style={{ animationDelay: '150ms' }}>
-              <div className="flex items-center justify-end mb-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowActivities(false)}
-                  className="gap-1.5 text-muted-foreground hover:text-foreground"
-                >
-                  <PanelRightClose className="h-4 w-4" />
-                  Ocultar
-                </Button>
-              </div>
-              <ActivityList
-                activities={activities}
-                companies={companies}
-                onCreateActivity={handleCreateActivity}
-                onUpdateActivity={handleUpdateActivity}
-                onDeleteActivity={handleDeleteActivity}
-              />
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShowActivities(true)}
-              className="h-10 w-10"
-              title="Mostrar atividades"
-            >
-              <PanelRightOpen className="h-4 w-4" />
+      {/* Activities Button - Fixed position */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <Sheet open={showActivities} onOpenChange={setShowActivities}>
+          <SheetTrigger asChild>
+            <Button size="lg" className="gap-2 shadow-lg">
+              <ClipboardList className="h-5 w-5" />
+              Atividades
+              {activities.filter(a => !a.isCompleted).length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {activities.filter(a => !a.isCompleted).length}
+                </Badge>
+              )}
             </Button>
-          )}
-        </div>
+          </SheetTrigger>
+          <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+            <SheetHeader className="mb-4">
+              <SheetTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                Atividades
+              </SheetTitle>
+            </SheetHeader>
+            <ActivityList
+              activities={activities}
+              companies={companies}
+              onCreateActivity={handleCreateActivity}
+              onUpdateActivity={handleUpdateActivity}
+              onDeleteActivity={handleDeleteActivity}
+            />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Main Content - Kanban Board */}
+      <div className="animate-fade-up overflow-x-auto" style={{ animationDelay: '100ms' }}>
+        <KanbanBoard
+          stages={stages}
+          companies={companies}
+          onMoveCompany={handleMoveCompany}
+          onCreateStage={handleCreateStage}
+          onUpdateStage={handleUpdateStage}
+          onDeleteStage={handleDeleteStage}
+          onUpdateDealValue={handleUpdateDealValue}
+        />
       </div>
     </div>
   );
