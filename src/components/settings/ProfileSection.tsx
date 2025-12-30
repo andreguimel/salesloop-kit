@@ -9,6 +9,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 
+// Funções de máscara
+const formatPhone = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+};
+
+const formatCpf = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+};
+
+const unformatValue = (value: string) => value.replace(/\D/g, '');
+
 export function ProfileSection() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -195,11 +214,10 @@ export function ProfileSection() {
               <Phone className="h-4 w-4 text-muted-foreground" />
               <Input
                 id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                placeholder="11999999999"
+                value={formatPhone(phone)}
+                onChange={(e) => setPhone(unformatValue(e.target.value).slice(0, 11))}
+                placeholder="(11) 99999-9999"
                 disabled={isLoading}
-                maxLength={11}
               />
             </div>
             <p className="text-xs text-muted-foreground">
@@ -207,14 +225,13 @@ export function ProfileSection() {
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cpf">CPF (apenas números)</Label>
+            <Label htmlFor="cpf">CPF</Label>
             <Input
               id="cpf"
-              value={cpf}
-              onChange={(e) => setCpf(e.target.value.replace(/\D/g, ''))}
-              placeholder="00000000000"
+              value={formatCpf(cpf)}
+              onChange={(e) => setCpf(unformatValue(e.target.value).slice(0, 11))}
+              placeholder="000.000.000-00"
               disabled={isLoading}
-              maxLength={11}
             />
             <p className="text-xs text-muted-foreground">
               Obrigatório para pagamentos via PIX
