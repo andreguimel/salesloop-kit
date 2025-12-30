@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Sparkles, Mail, Lock, User, ArrowRight, Loader2, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,7 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isHuman, setIsHuman] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
@@ -101,6 +102,15 @@ export default function Auth() {
       toast({
         title: 'Verificação necessária',
         description: 'Por favor, confirme que você não é um robô.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (isSignUp && !acceptedTerms) {
+      toast({
+        title: 'Termos não aceitos',
+        description: 'Você precisa aceitar os Termos de Uso e Política de Privacidade para criar uma conta.',
         variant: 'destructive',
       });
       return;
@@ -308,6 +318,38 @@ export default function Auth() {
                 >
                   <ShieldCheck className="h-4 w-4 text-primary" />
                   Não sou um robô
+                </label>
+              </div>
+            )}
+
+            {isSignUp && !isResetPassword && (
+              <div className="flex items-start space-x-3 p-4 rounded-lg border border-border/50 bg-secondary/30">
+                <Checkbox
+                  id="accept-terms"
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                  className="h-5 w-5 mt-0.5"
+                />
+                <label
+                  htmlFor="accept-terms"
+                  className="text-sm cursor-pointer select-none leading-relaxed"
+                >
+                  Li e aceito os{' '}
+                  <Link 
+                    to="/termos-de-uso" 
+                    target="_blank" 
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Termos de Uso
+                  </Link>{' '}
+                  e a{' '}
+                  <Link 
+                    to="/politica-privacidade" 
+                    target="_blank" 
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Política de Privacidade
+                  </Link>
                 </label>
               </div>
             )}
