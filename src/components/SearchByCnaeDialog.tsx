@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Building2, MapPin, Loader2, Plus, Check, Phone, Mail, Briefcase, Coins, AlertCircle } from 'lucide-react';
+import { Search, Building2, MapPin, Loader2, Plus, Check, Phone, Mail, Briefcase } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -26,12 +26,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { searchCompaniesByCnae, importCompanyFromSearch, fetchMunicipios, fetchCnaes, SearchCompanyResult, Municipio, Cnae } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { useCredits } from '@/hooks/useCredits';
-import { Link } from 'react-router-dom';
 
 interface SearchByCnaeDialogProps {
   onCompaniesImported: () => void;
@@ -56,7 +53,6 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
   const [loadingMunicipios, setLoadingMunicipios] = useState(false);
   const [loadingCnaes, setLoadingCnaes] = useState(false);
   const { toast } = useToast();
-  const { balance, hasCredits, consumeCredits, isCritical, isLow } = useCredits();
 
   // Load data when dialog opens
   useEffect(() => {
@@ -181,28 +177,14 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
   const handleImport = async (company: SearchCompanyResult) => {
     if (importedCnpjs.has(company.cnpj)) return;
 
-    // Check credits
-    if (!hasCredits) {
-      toast({
-        title: 'Sem créditos',
-        description: 'Você precisa de créditos para importar empresas.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setImportingCnpjs(prev => new Set(prev).add(company.cnpj));
 
     try {
       await importCompanyFromSearch(company);
-      
-      // Consume 1 credit
-      await consumeCredits(1, `Importação: ${company.fantasyName || company.name}`, company.cnpj);
-      
       setImportedCnpjs(prev => new Set(prev).add(company.cnpj));
       toast({
         title: 'Empresa importada',
-        description: `${company.fantasyName || company.name} foi adicionada. 1 crédito consumido.`,
+        description: `${company.fantasyName || company.name} foi adicionada`,
       });
       onCompaniesImported();
     } catch (error) {
@@ -223,16 +205,6 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
 
   const handleImportAll = async () => {
     const toImport = results.filter(c => !importedCnpjs.has(c.cnpj));
-    
-    // Check if user has enough credits
-    if (balance < toImport.length) {
-      toast({
-        title: 'Créditos insuficientes',
-        description: `Você precisa de ${toImport.length} crédito(s), mas tem apenas ${balance}.`,
-        variant: 'destructive',
-      });
-      return;
-    }
     
     for (const company of toImport) {
       await handleImport(company);

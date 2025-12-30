@@ -5,13 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MapPin, Search, Phone, Globe, Star, Download, Loader2, Building2, Coins, AlertCircle } from 'lucide-react';
+import { MapPin, Search, Phone, Globe, Star, Download, Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { searchGoogleMaps, importCompanyFromGoogleMaps, GoogleMapsCompany } from '@/lib/api';
-import { useCredits } from '@/hooks/useCredits';
-import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 
 interface SearchGoogleMapsDialogProps {
   onCompaniesImported: () => void;
@@ -73,7 +69,6 @@ export function SearchGoogleMapsDialog({ onCompaniesImported }: SearchGoogleMaps
   const [results, setResults] = useState<GoogleMapsCompany[]>([]);
   const [importedCompanies, setImportedCompanies] = useState<Set<string>>(new Set());
   const [importingAll, setImportingAll] = useState(false);
-  const { balance, hasCredits, consumeCredits, isCritical, isLow } = useCredits();
 
   const handleSearch = async () => {
     if (!query.trim()) {

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, Loader2, Building2, Phone, MapPin, Plus, Check, ChevronsUpDown, Coins, AlertCircle } from 'lucide-react';
+import { Search, Loader2, Building2, Phone, MapPin, Plus, Check, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,9 +14,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { fetchCnaes, Cnae } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { useCredits } from '@/hooks/useCredits';
-import { Link } from 'react-router-dom';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SearchResult {
   cnpj?: string;
@@ -55,7 +52,6 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const { toast } = useToast();
-  const { balance, hasCredits, consumeCredits, isCritical, isLow } = useCredits();
 
   const ITEMS_PER_PAGE = 50;
 
@@ -215,16 +211,6 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
       return;
     }
 
-    // Check if user has enough credits
-    if (balance < toImport.length) {
-      toast({ 
-        title: 'Créditos insuficientes', 
-        description: `Você precisa de ${toImport.length} crédito(s), mas tem apenas ${balance}.`,
-        variant: 'destructive' 
-      });
-      return;
-    }
-
     setIsImporting(true);
 
     try {
@@ -263,9 +249,6 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
           continue;
         }
 
-        // Consume 1 credit for this import
-        await consumeCredits(1, `Importação: ${companyName}`, newCompany.id);
-
         // Insert phones from contatos field
         // Format: "(DD) XXXXXXXX, (DD) XXXXXXXX"
         if (company.contatos) {
@@ -289,7 +272,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
 
       toast({
         title: 'Importação concluída!',
-        description: `${importedCount} empresa(s) importada(s). ${importedCount} crédito(s) consumido(s).`,
+        description: `${importedCount} empresa(s) importada(s) com sucesso.`,
       });
 
       setOpen(false);
@@ -331,43 +314,16 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
-              Buscar Empresas por CNAE
-            </DialogTitle>
-            <Badge 
-              variant="outline" 
-              className={cn(
-                "font-bold",
-                isCritical ? "bg-destructive/20 text-destructive border-destructive/30" :
-                isLow ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30" :
-                "bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
-              )}
-            >
-              <Coins className="h-3 w-3 mr-1" />
-              {balance} créditos
-            </Badge>
-          </div>
+          <DialogTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-primary" />
+            Buscar Empresas por CNAE
+          </DialogTitle>
           <DialogDescription>
             Busque empresas por CNAE, UF e cidade
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-          {/* No credits alert */}
-          {!hasCredits && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="flex items-center justify-between">
-                <span>Você não tem créditos. Compre mais para importar empresas.</span>
-                <Button size="sm" variant="outline" asChild>
-                  <Link to="/creditos">Comprar créditos</Link>
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Search Filters */}
           <div className="space-y-4">
             <div className="space-y-2">
@@ -499,7 +455,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                 <span className="text-sm text-muted-foreground">
                   {results.length} resultado(s) encontrado(s)
                 </span>
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={selectAll}>
                     {selectedResults.size === results.length ? 'Desmarcar todos' : 'Selecionar todos'}
                   </Button>
@@ -507,17 +463,15 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                     <Button 
                       size="sm" 
                       onClick={handleImport} 
-                      disabled={isImporting || !hasCredits || balance < selectedResults.size}
+                      disabled={isImporting}
                       className="gap-2"
-                      title={!hasCredits ? 'Sem créditos disponíveis' : balance < selectedResults.size ? `Você precisa de ${selectedResults.size} créditos` : ''}
                     >
                       {isImporting ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Plus className="h-4 w-4" />
                       )}
-                      Importar ({selectedResults.size}) 
-                      <span className="text-xs opacity-75">• {selectedResults.size} crédito(s)</span>
+                      Importar ({selectedResults.size})
                     </Button>
                   )}
                 </div>
