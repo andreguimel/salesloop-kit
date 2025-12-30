@@ -5,297 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Lista oficial de CNAEs principais (os mais usados)
-// Fonte: IBGE CNAE 2.0
-const CNAES_DATA = [
-  { codigo: "0111-3/01", descricao: "Cultivo de arroz" },
-  { codigo: "0111-3/02", descricao: "Cultivo de milho" },
-  { codigo: "0111-3/03", descricao: "Cultivo de trigo" },
-  { codigo: "0112-1/01", descricao: "Cultivo de algodão herbáceo" },
-  { codigo: "0113-0/00", descricao: "Cultivo de cana-de-açúcar" },
-  { codigo: "0121-1/01", descricao: "Horticultura" },
-  { codigo: "0141-5/01", descricao: "Produção de sementes certificadas" },
-  { codigo: "0151-2/01", descricao: "Criação de bovinos para corte" },
-  { codigo: "0151-2/02", descricao: "Criação de bovinos para leite" },
-  { codigo: "0155-5/01", descricao: "Criação de frangos para corte" },
-  { codigo: "4110-7/00", descricao: "Incorporação de empreendimentos imobiliários" },
-  { codigo: "4120-4/00", descricao: "Construção de edifícios" },
-  { codigo: "4211-1/01", descricao: "Construção de rodovias e ferrovias" },
-  { codigo: "4221-9/01", descricao: "Construção de barragens e represas" },
-  { codigo: "4312-6/00", descricao: "Perfurações e sondagens" },
-  { codigo: "4321-5/00", descricao: "Instalação e manutenção elétrica" },
-  { codigo: "4322-3/01", descricao: "Instalações hidráulicas, sanitárias e de gás" },
-  { codigo: "4330-4/01", descricao: "Impermeabilização em obras" },
-  { codigo: "4330-4/02", descricao: "Instalação de portas, janelas e esquadrias" },
-  { codigo: "4330-4/03", descricao: "Obras de acabamento" },
-  { codigo: "4511-1/01", descricao: "Comércio a varejo de automóveis" },
-  { codigo: "4520-0/01", descricao: "Serviços de manutenção de automóveis" },
-  { codigo: "4530-7/01", descricao: "Comércio de peças para veículos" },
-  { codigo: "4711-3/01", descricao: "Comércio varejista de mercadorias em geral - hipermercados" },
-  { codigo: "4711-3/02", descricao: "Comércio varejista de mercadorias em geral - supermercados" },
-  { codigo: "4712-1/00", descricao: "Comércio varejista de mercadorias em geral - minimercados" },
-  { codigo: "4721-1/02", descricao: "Padaria e confeitaria com predominância de revenda" },
-  { codigo: "4721-1/04", descricao: "Comércio varejista de doces, balas e semelhantes" },
-  { codigo: "4722-9/01", descricao: "Comércio varejista de carnes - açougues" },
-  { codigo: "4723-7/00", descricao: "Comércio varejista de bebidas" },
-  { codigo: "4724-5/00", descricao: "Comércio varejista de produtos de tabacaria" },
-  { codigo: "4729-6/99", descricao: "Comércio varejista de produtos alimentícios" },
-  { codigo: "4751-2/01", descricao: "Comércio varejista de artigos de armarinho" },
-  { codigo: "4753-9/00", descricao: "Comércio varejista de tapetes, cortinas e persianas" },
-  { codigo: "4754-7/01", descricao: "Comércio varejista de móveis" },
-  { codigo: "4755-5/01", descricao: "Comércio varejista de tecidos" },
-  { codigo: "4756-3/00", descricao: "Comércio varejista de artigos de cama, mesa e banho" },
-  { codigo: "4757-1/00", descricao: "Comércio varejista de artigos de uso pessoal" },
-  { codigo: "4759-8/01", descricao: "Comércio varejista de artigos de tapeçaria" },
-  { codigo: "4761-0/01", descricao: "Comércio varejista de livros" },
-  { codigo: "4761-0/02", descricao: "Comércio varejista de jornais e revistas" },
-  { codigo: "4762-8/00", descricao: "Comércio varejista de discos e CDs" },
-  { codigo: "4763-6/01", descricao: "Comércio varejista de artigos esportivos" },
-  { codigo: "4763-6/02", descricao: "Comércio varejista de artigos de caça e pesca" },
-  { codigo: "4771-7/01", descricao: "Comércio varejista de produtos farmacêuticos" },
-  { codigo: "4772-5/00", descricao: "Comércio varejista de cosméticos e perfumaria" },
-  { codigo: "4773-3/00", descricao: "Comércio varejista de artigos médicos e ortopédicos" },
-  { codigo: "4774-1/00", descricao: "Comércio varejista de artigos de ótica" },
-  { codigo: "4781-4/00", descricao: "Comércio varejista de artigos de vestuário" },
-  { codigo: "4782-2/01", descricao: "Comércio varejista de calçados" },
-  { codigo: "4783-1/01", descricao: "Comércio varejista de artigos de joalheria" },
-  { codigo: "4783-1/02", descricao: "Comércio varejista de artigos de relojoaria" },
-  { codigo: "4789-0/01", descricao: "Comércio varejista de suvenires" },
-  { codigo: "4789-0/99", descricao: "Comércio varejista de outros produtos" },
-  { codigo: "5611-2/01", descricao: "Restaurantes e similares" },
-  { codigo: "5611-2/02", descricao: "Bares e outros similares" },
-  { codigo: "5611-2/03", descricao: "Lanchonetes e casas de chá" },
-  { codigo: "5612-1/00", descricao: "Serviços ambulantes de alimentação" },
-  { codigo: "5620-1/01", descricao: "Fornecimento de alimentos para consumo domiciliar" },
-  { codigo: "5620-1/02", descricao: "Serviços de alimentação para eventos" },
-  { codigo: "6201-5/01", descricao: "Desenvolvimento de programas de computador sob encomenda" },
-  { codigo: "6202-3/00", descricao: "Desenvolvimento e licenciamento de programas customizáveis" },
-  { codigo: "6203-1/00", descricao: "Desenvolvimento e licenciamento de programas não-customizáveis" },
-  { codigo: "6204-0/00", descricao: "Consultoria em tecnologia da informação" },
-  { codigo: "6209-1/00", descricao: "Suporte técnico e manutenção em tecnologia da informação" },
-  { codigo: "6311-9/00", descricao: "Tratamento de dados e hospedagem na internet" },
-  { codigo: "6319-4/00", descricao: "Portais, provedores de conteúdo na internet" },
-  { codigo: "6399-2/00", descricao: "Outras atividades de prestação de serviços de informação" },
-  { codigo: "6821-8/01", descricao: "Corretagem na compra e venda de imóveis" },
-  { codigo: "6821-8/02", descricao: "Corretagem no aluguel de imóveis" },
-  { codigo: "6911-7/01", descricao: "Serviços advocatícios" },
-  { codigo: "6920-6/01", descricao: "Atividades de contabilidade" },
-  { codigo: "6920-6/02", descricao: "Atividades de consultoria e auditoria contábil" },
-  { codigo: "7020-4/00", descricao: "Atividades de consultoria em gestão empresarial" },
-  { codigo: "7111-1/00", descricao: "Serviços de arquitetura" },
-  { codigo: "7112-0/00", descricao: "Serviços de engenharia" },
-  { codigo: "7119-7/01", descricao: "Serviços de cartografia e topografia" },
-  { codigo: "7119-7/02", descricao: "Atividades de estudos geológicos" },
-  { codigo: "7119-7/03", descricao: "Serviços de desenho técnico" },
-  { codigo: "7120-1/00", descricao: "Testes e análises técnicas" },
-  { codigo: "7210-0/00", descricao: "Pesquisa e desenvolvimento em ciências físicas e naturais" },
-  { codigo: "7220-7/00", descricao: "Pesquisa e desenvolvimento em ciências sociais e humanas" },
-  { codigo: "7311-4/00", descricao: "Agências de publicidade" },
-  { codigo: "7312-2/00", descricao: "Agenciamento de espaços para publicidade" },
-  { codigo: "7319-0/01", descricao: "Criação de estandes para feiras e exposições" },
-  { codigo: "7319-0/02", descricao: "Promoção de vendas" },
-  { codigo: "7319-0/03", descricao: "Marketing direto" },
-  { codigo: "7319-0/04", descricao: "Consultoria em publicidade" },
-  { codigo: "7320-3/00", descricao: "Pesquisas de mercado e de opinião pública" },
-  { codigo: "7410-2/01", descricao: "Design" },
-  { codigo: "7410-2/02", descricao: "Design de interiores" },
-  { codigo: "7410-2/03", descricao: "Design de produto" },
-  { codigo: "7420-0/01", descricao: "Atividades de produção de fotografias" },
-  { codigo: "7420-0/02", descricao: "Atividades de produção de fotografias aéreas" },
-  { codigo: "7420-0/03", descricao: "Laboratórios fotográficos" },
-  { codigo: "7420-0/04", descricao: "Filmagem de festas e eventos" },
-  { codigo: "7490-1/01", descricao: "Serviços de tradução e interpretação" },
-  { codigo: "7490-1/02", descricao: "Escafandria e mergulho" },
-  { codigo: "7490-1/03", descricao: "Serviços de agronomia e consultoria agrícola" },
-  { codigo: "7490-1/04", descricao: "Atividades de intermediação" },
-  { codigo: "7490-1/05", descricao: "Agenciamento de profissionais" },
-  { codigo: "7500-1/00", descricao: "Atividades veterinárias" },
-  { codigo: "7719-5/99", descricao: "Locação de outros meios de transporte" },
-  { codigo: "7722-5/00", descricao: "Aluguel de fitas de vídeo e DVDs" },
-  { codigo: "7723-3/00", descricao: "Aluguel de objetos do vestuário e acessórios" },
-  { codigo: "7729-2/01", descricao: "Aluguel de aparelhos de jogos eletrônicos" },
-  { codigo: "7729-2/02", descricao: "Aluguel de móveis e utensílios domésticos" },
-  { codigo: "7729-2/03", descricao: "Aluguel de material médico" },
-  { codigo: "7729-2/99", descricao: "Aluguel de outros objetos pessoais" },
-  { codigo: "7731-4/00", descricao: "Aluguel de máquinas e equipamentos agrícolas" },
-  { codigo: "7732-2/01", descricao: "Aluguel de máquinas para construção" },
-  { codigo: "7733-1/00", descricao: "Aluguel de máquinas e equipamentos de escritório" },
-  { codigo: "7739-0/01", descricao: "Aluguel de outras máquinas e equipamentos comerciais" },
-  { codigo: "7739-0/99", descricao: "Aluguel de outras máquinas e equipamentos" },
-  { codigo: "7810-8/00", descricao: "Seleção e agenciamento de mão de obra" },
-  { codigo: "7820-5/00", descricao: "Locação de mão de obra temporária" },
-  { codigo: "7830-2/00", descricao: "Fornecimento e gestão de recursos humanos" },
-  { codigo: "7911-2/00", descricao: "Agências de viagens" },
-  { codigo: "7912-1/00", descricao: "Operadores turísticos" },
-  { codigo: "7990-2/00", descricao: "Serviços de reservas e organização de viagens" },
-  { codigo: "8011-1/01", descricao: "Atividades de vigilância e segurança privada" },
-  { codigo: "8012-9/00", descricao: "Atividades de transporte de valores" },
-  { codigo: "8020-0/01", descricao: "Atividades de monitoramento de sistemas de segurança eletrônica" },
-  { codigo: "8020-0/02", descricao: "Outras atividades de serviços de segurança" },
-  { codigo: "8030-7/00", descricao: "Atividades de investigação particular" },
-  { codigo: "8111-7/00", descricao: "Serviços combinados para apoio a edifícios" },
-  { codigo: "8112-5/00", descricao: "Condomínios prediais" },
-  { codigo: "8121-4/00", descricao: "Limpeza em prédios e domicílios" },
-  { codigo: "8122-2/00", descricao: "Imunização e controle de pragas" },
-  { codigo: "8129-0/00", descricao: "Atividades de limpeza não especificadas" },
-  { codigo: "8130-3/00", descricao: "Atividades paisagísticas" },
-  { codigo: "8211-3/00", descricao: "Serviços combinados de escritório e apoio administrativo" },
-  { codigo: "8219-9/01", descricao: "Fotocópias" },
-  { codigo: "8219-9/99", descricao: "Preparação de documentos e serviços de apoio administrativo" },
-  { codigo: "8220-2/00", descricao: "Atividades de teleatendimento" },
-  { codigo: "8230-0/01", descricao: "Serviços de organização de feiras e congressos" },
-  { codigo: "8230-0/02", descricao: "Casas de festas e eventos" },
-  { codigo: "8291-1/00", descricao: "Atividades de cobrança e informações cadastrais" },
-  { codigo: "8292-0/00", descricao: "Envasamento e empacotamento" },
-  { codigo: "8299-7/01", descricao: "Medição de consumo de energia elétrica, gás e água" },
-  { codigo: "8299-7/02", descricao: "Emissão de vales-alimentação e similares" },
-  { codigo: "8299-7/03", descricao: "Serviços de gravação de carimbos" },
-  { codigo: "8299-7/04", descricao: "Leiloeiros independentes" },
-  { codigo: "8299-7/05", descricao: "Serviços de levantamento de fundos" },
-  { codigo: "8299-7/06", descricao: "Casas lotéricas" },
-  { codigo: "8299-7/07", descricao: "Salas de acesso à internet" },
-  { codigo: "8299-7/99", descricao: "Outras atividades de serviços prestados" },
-  { codigo: "8511-2/00", descricao: "Educação infantil - creche" },
-  { codigo: "8512-1/00", descricao: "Educação infantil - pré-escola" },
-  { codigo: "8513-9/00", descricao: "Ensino fundamental" },
-  { codigo: "8520-1/00", descricao: "Ensino médio" },
-  { codigo: "8531-7/00", descricao: "Educação superior - graduação" },
-  { codigo: "8532-5/00", descricao: "Educação superior - pós-graduação e extensão" },
-  { codigo: "8533-3/00", descricao: "Educação superior - pós-graduação stricto sensu" },
-  { codigo: "8541-4/00", descricao: "Educação profissional de nível técnico" },
-  { codigo: "8542-2/00", descricao: "Educação profissional de nível tecnológico" },
-  { codigo: "8550-3/01", descricao: "Administração de caixas escolares" },
-  { codigo: "8550-3/02", descricao: "Atividades de apoio à educação" },
-  { codigo: "8591-1/00", descricao: "Ensino de esportes" },
-  { codigo: "8592-9/01", descricao: "Ensino de dança" },
-  { codigo: "8592-9/02", descricao: "Ensino de artes cênicas" },
-  { codigo: "8592-9/03", descricao: "Ensino de música" },
-  { codigo: "8592-9/99", descricao: "Ensino de arte e cultura não especificado" },
-  { codigo: "8593-7/00", descricao: "Ensino de idiomas" },
-  { codigo: "8599-6/01", descricao: "Formação de condutores" },
-  { codigo: "8599-6/02", descricao: "Cursos de pilotagem" },
-  { codigo: "8599-6/03", descricao: "Treinamento em informática" },
-  { codigo: "8599-6/04", descricao: "Treinamento em desenvolvimento profissional" },
-  { codigo: "8599-6/05", descricao: "Cursos preparatórios para concursos" },
-  { codigo: "8599-6/99", descricao: "Outras atividades de ensino" },
-  { codigo: "8610-1/01", descricao: "Atividades de atendimento hospitalar" },
-  { codigo: "8610-1/02", descricao: "Atividades de atendimento em pronto-socorro" },
-  { codigo: "8621-6/01", descricao: "UTI móvel" },
-  { codigo: "8621-6/02", descricao: "Serviços móveis de atendimento a urgências" },
-  { codigo: "8622-4/00", descricao: "Serviços de remoção de pacientes" },
-  { codigo: "8630-5/01", descricao: "Atividade médica ambulatorial com recursos para exames" },
-  { codigo: "8630-5/02", descricao: "Atividade médica ambulatorial com recursos para procedimentos" },
-  { codigo: "8630-5/03", descricao: "Atividade médica ambulatorial restrita a consultas" },
-  { codigo: "8630-5/04", descricao: "Atividade odontológica" },
-  { codigo: "8630-5/06", descricao: "Serviços de vacinação e imunização humana" },
-  { codigo: "8630-5/07", descricao: "Atividades de reprodução humana assistida" },
-  { codigo: "8630-5/99", descricao: "Atividades de atenção ambulatorial" },
-  { codigo: "8640-2/01", descricao: "Laboratórios de anatomia patológica" },
-  { codigo: "8640-2/02", descricao: "Laboratórios clínicos" },
-  { codigo: "8640-2/03", descricao: "Serviços de diálise e nefrologia" },
-  { codigo: "8640-2/04", descricao: "Serviços de tomografia" },
-  { codigo: "8640-2/05", descricao: "Serviços de diagnóstico por imagem com uso de radiação ionizante" },
-  { codigo: "8640-2/06", descricao: "Serviços de ressonância magnética" },
-  { codigo: "8640-2/07", descricao: "Serviços de diagnóstico por imagem sem uso de radiação ionizante" },
-  { codigo: "8640-2/08", descricao: "Serviços de diagnóstico por registro gráfico - ECG, EEG e outros" },
-  { codigo: "8640-2/09", descricao: "Serviços de diagnóstico por métodos ópticos - endoscopia e outros" },
-  { codigo: "8640-2/10", descricao: "Serviços de quimioterapia" },
-  { codigo: "8640-2/11", descricao: "Serviços de radioterapia" },
-  { codigo: "8640-2/12", descricao: "Serviços de hemoterapia" },
-  { codigo: "8640-2/13", descricao: "Serviços de litotripsia" },
-  { codigo: "8640-2/14", descricao: "Serviços de bancos de células e tecidos humanos" },
-  { codigo: "8640-2/99", descricao: "Atividades de serviços de complementação diagnóstica" },
-  { codigo: "8650-0/01", descricao: "Atividades de enfermagem" },
-  { codigo: "8650-0/02", descricao: "Atividades de profissionais da nutrição" },
-  { codigo: "8650-0/03", descricao: "Atividades de psicologia e psicanálise" },
-  { codigo: "8650-0/04", descricao: "Atividades de fisioterapia" },
-  { codigo: "8650-0/05", descricao: "Atividades de terapia ocupacional" },
-  { codigo: "8650-0/06", descricao: "Atividades de fonoaudiologia" },
-  { codigo: "8650-0/07", descricao: "Atividades de terapia de nutrição enteral e parenteral" },
-  { codigo: "8650-0/99", descricao: "Atividades de profissionais da área de saúde" },
-  { codigo: "8660-7/00", descricao: "Atividades de apoio à gestão de saúde" },
-  { codigo: "8690-9/01", descricao: "Atividades de práticas integrativas e complementares" },
-  { codigo: "8690-9/02", descricao: "Atividades de banco de leite humano" },
-  { codigo: "8690-9/03", descricao: "Atividades de acupuntura" },
-  { codigo: "8690-9/04", descricao: "Atividades de podologia" },
-  { codigo: "8690-9/99", descricao: "Outras atividades de atenção à saúde humana" },
-  { codigo: "8711-5/01", descricao: "Clínicas e residências geriátricas" },
-  { codigo: "8711-5/02", descricao: "Instituições de longa permanência para idosos" },
-  { codigo: "8711-5/03", descricao: "Atividades de assistência a deficientes físicos" },
-  { codigo: "8711-5/04", descricao: "Centros de apoio a pacientes com câncer e AIDS" },
-  { codigo: "8711-5/05", descricao: "Condomínios residenciais para idosos" },
-  { codigo: "8712-3/00", descricao: "Atividades de fornecimento de infraestrutura de apoio" },
-  { codigo: "8720-4/01", descricao: "Atividades de centros de assistência psicossocial" },
-  { codigo: "8720-4/99", descricao: "Atividades de assistência psicossocial e saúde" },
-  { codigo: "8730-1/01", descricao: "Orfanatos" },
-  { codigo: "8730-1/02", descricao: "Albergues assistenciais" },
-  { codigo: "8730-1/99", descricao: "Atividades de assistência social" },
-  { codigo: "9001-9/01", descricao: "Produção teatral" },
-  { codigo: "9001-9/02", descricao: "Produção musical" },
-  { codigo: "9001-9/03", descricao: "Produção de espetáculos de dança" },
-  { codigo: "9001-9/04", descricao: "Produção de espetáculos circenses" },
-  { codigo: "9001-9/05", descricao: "Produção de espetáculos de rodeios" },
-  { codigo: "9001-9/06", descricao: "Atividades de sonorização e iluminação" },
-  { codigo: "9001-9/99", descricao: "Artes cênicas, espetáculos e atividades complementares" },
-  { codigo: "9002-7/01", descricao: "Atividades de artistas plásticos" },
-  { codigo: "9002-7/02", descricao: "Restauração de obras de arte" },
-  { codigo: "9003-5/00", descricao: "Gestão de espaços para artes cênicas" },
-  { codigo: "9101-5/00", descricao: "Atividades de bibliotecas e arquivos" },
-  { codigo: "9102-3/01", descricao: "Atividades de museus e exploração de lugares e prédios históricos" },
-  { codigo: "9102-3/02", descricao: "Restauração e conservação de lugares e prédios históricos" },
-  { codigo: "9103-1/00", descricao: "Atividades de jardins botânicos e zoológicos" },
-  { codigo: "9200-3/01", descricao: "Casas de bingo" },
-  { codigo: "9200-3/02", descricao: "Exploração de apostas em corridas de cavalos" },
-  { codigo: "9200-3/99", descricao: "Exploração de jogos de azar e apostas" },
-  { codigo: "9311-5/00", descricao: "Gestão de instalações de esportes" },
-  { codigo: "9312-3/00", descricao: "Clubes sociais, esportivos e similares" },
-  { codigo: "9313-1/00", descricao: "Atividades de condicionamento físico" },
-  { codigo: "9319-1/01", descricao: "Produção e promoção de eventos esportivos" },
-  { codigo: "9319-1/99", descricao: "Outras atividades esportivas" },
-  { codigo: "9321-2/00", descricao: "Parques de diversão e parques temáticos" },
-  { codigo: "9329-8/01", descricao: "Discotecas, danceterias, salões de dança e similares" },
-  { codigo: "9329-8/02", descricao: "Exploração de boliches" },
-  { codigo: "9329-8/03", descricao: "Exploração de jogos de sinuca e bilhar" },
-  { codigo: "9329-8/04", descricao: "Exploração de jogos eletrônicos recreativos" },
-  { codigo: "9329-8/99", descricao: "Outras atividades de recreação e lazer" },
-  { codigo: "9411-1/00", descricao: "Atividades de organizações associativas patronais" },
-  { codigo: "9412-0/01", descricao: "Atividades de fiscalização profissional" },
-  { codigo: "9412-0/99", descricao: "Outras atividades associativas profissionais" },
-  { codigo: "9420-1/00", descricao: "Atividades de organizações sindicais" },
-  { codigo: "9430-8/00", descricao: "Atividades de associações de defesa de direitos sociais" },
-  { codigo: "9491-0/00", descricao: "Atividades de organizações religiosas ou filosóficas" },
-  { codigo: "9492-8/00", descricao: "Atividades de organizações políticas" },
-  { codigo: "9493-6/00", descricao: "Atividades de organizações associativas ligadas à cultura" },
-  { codigo: "9499-5/00", descricao: "Atividades associativas não especificadas" },
-  { codigo: "9511-8/00", descricao: "Reparação e manutenção de computadores" },
-  { codigo: "9512-6/00", descricao: "Reparação e manutenção de equipamentos de comunicação" },
-  { codigo: "9521-5/00", descricao: "Reparação e manutenção de equipamentos eletroeletrônicos" },
-  { codigo: "9529-1/01", descricao: "Reparação de calçados, bolsas e artigos de viagem" },
-  { codigo: "9529-1/02", descricao: "Chaveiros" },
-  { codigo: "9529-1/03", descricao: "Reparação de relógios" },
-  { codigo: "9529-1/04", descricao: "Reparação de bicicletas, triciclos e outros veículos" },
-  { codigo: "9529-1/05", descricao: "Reparação de artigos do mobiliário" },
-  { codigo: "9529-1/06", descricao: "Reparação de joias" },
-  { codigo: "9529-1/99", descricao: "Reparação e manutenção de outros objetos" },
-  { codigo: "9601-7/01", descricao: "Lavanderias" },
-  { codigo: "9601-7/02", descricao: "Tinturarias" },
-  { codigo: "9601-7/03", descricao: "Toalheiros" },
-  { codigo: "9602-5/01", descricao: "Cabeleireiros, manicure e pedicure" },
-  { codigo: "9602-5/02", descricao: "Atividades de estética e tratamentos de beleza" },
-  { codigo: "9603-3/01", descricao: "Gestão e manutenção de cemitérios" },
-  { codigo: "9603-3/02", descricao: "Serviços de cremação" },
-  { codigo: "9603-3/03", descricao: "Serviços de sepultamento" },
-  { codigo: "9603-3/04", descricao: "Serviços de funerárias" },
-  { codigo: "9603-3/05", descricao: "Serviços de somatoconservação" },
-  { codigo: "9603-3/99", descricao: "Atividades funerárias e serviços relacionados" },
-  { codigo: "9609-2/02", descricao: "Agências matrimoniais" },
-  { codigo: "9609-2/04", descricao: "Exploração de máquinas de serviços pessoais" },
-  { codigo: "9609-2/05", descricao: "Atividades de sauna e banhos" },
-  { codigo: "9609-2/06", descricao: "Serviços de tatuagem e colocação de piercing" },
-  { codigo: "9609-2/07", descricao: "Alojamento de animais domésticos" },
-  { codigo: "9609-2/08", descricao: "Higiene e embelezamento de animais domésticos" },
-  { codigo: "9609-2/99", descricao: "Outras atividades de serviços pessoais" },
-];
+// Cache for CNAEs data (in-memory, resets on cold start)
+let cachedCnaes: { id: string; descricao: string }[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// IBGE API endpoint for CNAE subclasses (most detailed level)
+const IBGE_API_URL = 'https://servicodados.ibge.gov.br/api/v2/cnae/subclasses';
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -304,16 +20,61 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Returning CNAE list with', CNAES_DATA.length, 'items');
+    const now = Date.now();
+    
+    // Check if cache is valid
+    if (cachedCnaes && (now - cacheTimestamp) < CACHE_DURATION_MS) {
+      console.log('Returning cached CNAE list with', cachedCnaes.length, 'items');
+      return new Response(
+        JSON.stringify({ cnaes: cachedCnaes, success: true, cached: true }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 
+        }
+      );
+    }
 
-    // Transform to match expected format
-    const cnaes = CNAES_DATA.map(item => ({
-      id: item.codigo,
-      descricao: item.descricao
-    }));
+    console.log('Fetching CNAEs from IBGE API...');
+    
+    // Fetch from IBGE API
+    const response = await fetch(IBGE_API_URL, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`IBGE API returned status ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    console.log('IBGE API returned', data.length, 'items');
+
+    // Transform IBGE format to our format
+    // IBGE format: { id: "0111301", descricao: "...", classe: {...}, grupo: {...}, ... }
+    const cnaes = data.map((item: any) => {
+      // Format the code as XX.XX-X/XX (CNAE subclass format)
+      const codigo = item.id.toString().padStart(7, '0');
+      const formatted = `${codigo.slice(0, 4)}-${codigo.slice(4, 5)}/${codigo.slice(5, 7)}`;
+      
+      return {
+        id: formatted,
+        descricao: item.descricao
+      };
+    });
+
+    // Sort alphabetically by description
+    cnaes.sort((a: any, b: any) => a.descricao.localeCompare(b.descricao, 'pt-BR'));
+
+    // Update cache
+    cachedCnaes = cnaes;
+    cacheTimestamp = now;
+
+    console.log('Returning CNAE list with', cnaes.length, 'items');
 
     return new Response(
-      JSON.stringify({ cnaes, success: true }),
+      JSON.stringify({ cnaes, success: true, cached: false, total: cnaes.length }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
@@ -322,9 +83,22 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error fetching CNAEs:', error);
+    
+    // If we have cached data, return it even if expired
+    if (cachedCnaes) {
+      console.log('Returning stale cache due to error');
+      return new Response(
+        JSON.stringify({ cnaes: cachedCnaes, success: true, cached: true, stale: true }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 
+        }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to fetch CNAEs',
+        error: 'Falha ao buscar CNAEs do IBGE',
         details: error instanceof Error ? error.message : 'Unknown error' 
       }),
       { 
