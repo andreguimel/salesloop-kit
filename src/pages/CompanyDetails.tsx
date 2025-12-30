@@ -21,7 +21,8 @@ import {
   Pencil,
   ExternalLink,
   Plus,
-  Trash2
+  Trash2,
+  MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -480,9 +481,15 @@ const CompanyDetails = () => {
                 <div className="space-y-2">
                   {company.phones.map((phone) => (
                     <div key={phone.id || phone.number} className="flex items-center gap-2 group">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      {phone.status === 'valid' ? (
+                        <MessageCircle className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                      )}
                       <a 
-                        href={`tel:${phone.number}`}
+                        href={phone.status === 'valid' ? `https://wa.me/55${phone.number.replace(/\D/g, '')}` : `tel:${phone.number}`}
+                        target={phone.status === 'valid' ? '_blank' : undefined}
+                        rel={phone.status === 'valid' ? 'noopener noreferrer' : undefined}
                         className="font-mono text-sm hover:text-primary transition-colors flex-1"
                       >
                         {formatPhone(phone.number)}
