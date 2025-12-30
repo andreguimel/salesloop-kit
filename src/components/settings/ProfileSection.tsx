@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Save, Loader2, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Save, Loader2, Lock, Eye, EyeOff, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ export function ProfileSection() {
   const { toast } = useToast();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -40,7 +41,7 @@ export function ProfileSection() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, phone')
         .eq('id', user.id)
         .single();
 
@@ -50,6 +51,7 @@ export function ProfileSection() {
       
       if (data) {
         setFullName(data.full_name || '');
+        setPhone(data.phone || '');
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -69,6 +71,7 @@ export function ProfileSection() {
           id: user.id,
           full_name: fullName,
           email: email,
+          phone: phone,
         });
 
       if (error) throw error;
@@ -181,6 +184,23 @@ export function ProfileSection() {
             </div>
             <p className="text-xs text-muted-foreground">
               O email não pode ser alterado
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Telefone (com DDD)</Label>
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <Input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                placeholder="11999999999"
+                disabled={isLoading}
+                maxLength={11}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Usado para pagamentos via PIX
             </p>
           </div>
           <Button 
