@@ -273,9 +273,9 @@ const CRM = () => {
       )}
 
       {/* Main Content */}
-      <div className="grid lg:grid-cols-[1fr,350px] gap-6">
-        {/* Kanban Board */}
-        <div className="animate-fade-up" style={{ animationDelay: '100ms' }}>
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Kanban Board - scrollable container */}
+        <div className="flex-1 min-w-0 overflow-x-auto animate-fade-up" style={{ animationDelay: '100ms' }}>
           <KanbanBoard
             stages={stages}
             companies={companies}
@@ -287,8 +287,8 @@ const CRM = () => {
           />
         </div>
 
-        {/* Activity Sidebar */}
-        <div className="animate-fade-up" style={{ animationDelay: '150ms' }}>
+        {/* Activity Sidebar - fixed width */}
+        <div className="w-full lg:w-[350px] flex-shrink-0 animate-fade-up" style={{ animationDelay: '150ms' }}>
           <ActivityList
             activities={activities}
             companies={companies}
