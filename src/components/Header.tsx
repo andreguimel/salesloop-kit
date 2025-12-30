@@ -1,4 +1,4 @@
-import { Sparkles, Menu, Bell, User, LogOut } from 'lucide-react';
+import { Search, Menu, Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -29,7 +29,7 @@ export function Header() {
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className="flex items-center justify-center w-10 h-10 rounded-xl gradient-primary glow-primary">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
+              <Search className="h-5 w-5 text-primary-foreground" />
             </div>
           </div>
           <div>
