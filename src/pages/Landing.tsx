@@ -354,78 +354,76 @@ const Landing = () => {
                 </Button>
               </div>
 
-              {/* Results Section */}
-              <div className={`border-t border-border/50 transition-all duration-500 ${showResults ? 'opacity-100' : 'opacity-0'}`}>
-                {showResults && (
-                  <div className="p-6">
-                    {/* Results Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-sm text-muted-foreground">
-                        <span className="text-foreground font-semibold">50</span> resultado(s) encontrado(s)
+              {/* Results Section - Fixed height to prevent layout shift */}
+              <div className="border-t border-border/50 h-[480px] overflow-hidden">
+                <div className={`p-6 transition-all duration-500 ${showResults ? 'opacity-100' : 'opacity-0'}`}>
+                  {/* Results Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm text-muted-foreground">
+                      <span className="text-foreground font-semibold">50</span> resultado(s) encontrado(s)
+                    </span>
+                    <div className="flex items-center gap-4">
+                      <Button variant="outline" size="sm">Selecionar todos</Button>
+                      <span className="text-xs text-muted-foreground">
+                        💰 Custo: 0 crédito(s) | Saldo: 6
                       </span>
-                      <div className="flex items-center gap-4">
-                        <Button variant="outline" size="sm">Selecionar todos</Button>
-                        <span className="text-xs text-muted-foreground">
-                          💰 Custo: 0 crédito(s) | Saldo: 6
-                        </span>
-                      </div>
                     </div>
+                  </div>
 
-                    {/* Results List */}
-                    <div className="space-y-3">
-                      {mockLeads.map((lead, index) => (
-                        <div 
-                          key={index}
-                          className={`p-4 rounded-xl bg-secondary/30 border border-border/30 transition-all duration-500 ${
-                            index < visibleItems ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                          }`}
-                          style={{ transitionDelay: `${index * 100}ms` }}
-                        >
-                          <div className="flex items-start gap-3">
-                            {/* Checkbox */}
-                            <div className="w-5 h-5 rounded-full border-2 border-border mt-1 shrink-0" />
-                            
-                            {/* Company Icon */}
-                            <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
-                              <FileText className="h-4 w-4 text-primary" />
+                  {/* Results List */}
+                  <div className="space-y-3">
+                    {mockLeads.map((lead, index) => (
+                      <div 
+                        key={index}
+                        className={`p-4 rounded-xl bg-secondary/30 border border-border/30 transition-all duration-500 ${
+                          showResults && index < visibleItems ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                        }`}
+                        style={{ transitionDelay: `${index * 100}ms` }}
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Checkbox */}
+                          <div className="w-5 h-5 rounded-full border-2 border-border mt-1 shrink-0" />
+                          
+                          {/* Company Icon */}
+                          <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                            <FileText className="h-4 w-4 text-primary" />
+                          </div>
+                          
+                          {/* Company Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-sm">{lead.name}</span>
+                              <Badge variant="outline" className="text-xs font-mono">{lead.cnpj}</Badge>
+                              <Lock className="h-3 w-3 text-muted-foreground" />
                             </div>
-                            
-                            {/* Company Info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-medium text-sm">{lead.name}</span>
-                                <Badge variant="outline" className="text-xs font-mono">{lead.cnpj}</Badge>
-                                <Lock className="h-3 w-3 text-muted-foreground" />
-                              </div>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                <MapPin className="h-3 w-3" />
-                                {lead.address} - CEP: {lead.cep}
-                              </div>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                <Phone className="h-3 w-3" />
-                                {lead.phone}
-                              </div>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                              <MapPin className="h-3 w-3" />
+                              {lead.address} - CEP: {lead.cep}
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                              <Phone className="h-3 w-3" />
+                              {lead.phone}
                             </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-
-                    {/* Unlock CTA */}
-                    <div className="mt-6 p-4 rounded-xl bg-primary/10 border border-primary/20 text-center">
-                      <p className="text-sm mb-3">
-                        <Lock className="h-4 w-4 inline mr-1" />
-                        Dados ocultos - <span className="text-primary font-medium">Desbloqueie com créditos</span>
-                      </p>
-                      <Link to="/auth">
-                        <Button size="sm" className="gradient-primary border-0">
-                          Criar Conta Grátis
-                          <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
+
+                  {/* Unlock CTA */}
+                  <div className="mt-6 p-4 rounded-xl bg-primary/10 border border-primary/20 text-center">
+                    <p className="text-sm mb-3">
+                      <Lock className="h-4 w-4 inline mr-1" />
+                      Dados ocultos - <span className="text-primary font-medium">Desbloqueie com créditos</span>
+                    </p>
+                    <Link to="/auth">
+                      <Button size="sm" className="gradient-primary border-0">
+                        Criar Conta Grátis
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
