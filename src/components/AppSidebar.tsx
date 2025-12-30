@@ -1,11 +1,13 @@
-import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings, Moon, Sun } from "lucide-react";
+import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings, Moon, Sun, Coins } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOverdueTasks } from "@/hooks/useOverdueTasks";
+import { useCredits } from "@/hooks/useCredits";
 import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 import {
   Sidebar,
@@ -36,10 +38,23 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const { signOut, user } = useAuth();
   const { count: overdueCount } = useOverdueTasks();
+  const { balance, loading: creditsLoading, isLow, isCritical } = useCredits();
   const { theme, setTheme } = useTheme();
 
   const isActive = (path: string) => currentPath === path;
   const isDark = theme === "dark";
+
+  const getCreditsBadgeVariant = () => {
+    if (isCritical) return "destructive";
+    if (isLow) return "secondary";
+    return "default";
+  };
+
+  const getCreditsBadgeClass = () => {
+    if (isCritical) return "bg-destructive text-destructive-foreground";
+    if (isLow) return "bg-yellow-500/20 text-yellow-500 border-yellow-500/30";
+    return "bg-emerald-500/20 text-emerald-500 border-emerald-500/30";
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar text-sidebar-foreground">
@@ -57,6 +72,41 @@ export function AppSidebar() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Credits Section */}
+        <div className="px-4 pb-3 border-b border-sidebar-border">
+          <Link 
+            to="/creditos" 
+            className={cn(
+              "flex items-center gap-2 p-2 rounded-lg transition-colors hover:bg-sidebar-accent",
+              currentPath === "/creditos" && "bg-sidebar-primary"
+            )}
+          >
+            <Coins className={cn(
+              "h-5 w-5",
+              isCritical ? "text-destructive" : isLow ? "text-yellow-500" : "text-emerald-500"
+            )} />
+            {!collapsed && (
+              <div className="flex items-center justify-between flex-1">
+                <span className="text-sm text-sidebar-foreground">Créditos</span>
+                <Badge 
+                  variant="outline" 
+                  className={cn("font-bold", getCreditsBadgeClass())}
+                >
+                  {creditsLoading ? "..." : balance}
+                </Badge>
+              </div>
+            )}
+            {collapsed && !creditsLoading && (
+              <Badge 
+                variant="outline" 
+                className={cn("absolute -top-1 -right-1 h-5 px-1.5 text-[10px]", getCreditsBadgeClass())}
+              >
+                {balance}
+              </Badge>
+            )}
+          </Link>
         </div>
 
         <SidebarGroup>

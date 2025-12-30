@@ -29,3 +29,12 @@ verify_jwt = false
 
 [functions.enrich-company]
 verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.abacatepay-webhook]
+verify_jwt = false
+
+[functions.search-api]
+verify_jwt = false
