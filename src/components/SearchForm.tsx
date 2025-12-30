@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, SlidersHorizontal, X, ArrowUpDown, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,13 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SearchFilters, PipelineStage } from '@/types';
-import { segments, cities } from '@/data/mockData';
+import { SearchFilters, PipelineStage, Company } from '@/types';
 import { fetchPipelineStages } from '@/lib/crm-api';
 
 interface SearchFormProps {
   onSearch: (filters: SearchFilters) => void;
   isLoading?: boolean;
+  companies?: Company[];
 }
 
 const defaultFilters: SearchFilters = {
@@ -29,7 +29,7 @@ const defaultFilters: SearchFilters = {
   sortBy: 'newest',
 };
 
-export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
+export function SearchForm({ onSearch, isLoading, companies = [] }: SearchFormProps) {
   const [filters, setFilters] = useState<SearchFilters>(defaultFilters);
   const [stages, setStages] = useState<PipelineStage[]>([]);
 
@@ -45,6 +45,17 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
       console.error('Error loading stages:', error);
     }
   };
+
+  // Extract unique cities and segments from actual data
+  const uniqueCities = useMemo(() => {
+    const cities = companies.map(c => c.city).filter(Boolean);
+    return [...new Set(cities)].sort();
+  }, [companies]);
+
+  const uniqueSegments = useMemo(() => {
+    const segments = companies.map(c => c.segment).filter(Boolean);
+    return [...new Set(segments)].sort();
+  }, [companies]);
 
   const handleSearch = () => {
     onSearch(filters);
@@ -105,9 +116,9 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             <SelectTrigger className="h-10 md:h-11 bg-secondary/50 border-border/50">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="_all">Todas</SelectItem>
-              {cities.map((city) => (
+            <SelectContent className="bg-card border-border max-h-60">
+              <SelectItem value="_all">Todas ({uniqueCities.length})</SelectItem>
+              {uniqueCities.map((city) => (
                 <SelectItem key={city} value={city}>
                   {city}
                 </SelectItem>
@@ -127,9 +138,9 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             <SelectTrigger className="h-10 md:h-11 bg-secondary/50 border-border/50">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="_all">Todos</SelectItem>
-              {segments.map((segment) => (
+            <SelectContent className="bg-card border-border max-h-60">
+              <SelectItem value="_all">Todos ({uniqueSegments.length})</SelectItem>
+              {uniqueSegments.map((segment) => (
                 <SelectItem key={segment} value={segment}>
                   {segment}
                 </SelectItem>

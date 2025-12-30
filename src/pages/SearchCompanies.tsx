@@ -274,7 +274,7 @@ const SearchCompanies = () => {
       </div>
 
       {/* Search Form */}
-      <SearchForm onSearch={handleSearch} isLoading={isSearching} />
+      <SearchForm onSearch={handleSearch} isLoading={isSearching} companies={companies} />
 
       {/* Company Table */}
       <CompanyTable
