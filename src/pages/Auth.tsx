@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Sparkles, Mail, Lock, User, ArrowRight, Loader2, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Search, Mail, Lock, User, ArrowRight, Loader2, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -185,7 +185,7 @@ export default function Auth() {
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-3 mb-8 animate-fade-up hover:opacity-80 transition-opacity cursor-pointer">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl gradient-primary glow-primary">
-            <Sparkles className="h-6 w-6 text-primary-foreground" />
+            <Search className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gradient">Achei Leads</h1>
