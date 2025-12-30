@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, 
@@ -18,7 +19,10 @@ import {
   MessageSquare,
   ChevronRight,
   Play,
-  Users
+  Users,
+  Lock,
+  ChevronDown,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,12 +53,41 @@ const Landing = () => {
   ];
 
   const mockLeads = [
-    { name: 'Tech Solutions Ltda', cnae: '6201-5/00', activity: 'Desenvolvimento de programas', city: 'São Paulo', phone: '(11) 9****-4567', email: 'contato@tech***.com.br' },
-    { name: 'Construtora Horizonte', cnae: '4120-4/00', activity: 'Construção de edifícios', city: 'Rio de Janeiro', phone: '(21) 9****-8901', email: 'comercial@horiz***.com.br' },
-    { name: 'Clínica Saúde Total', cnae: '8630-5/01', activity: 'Atividade médica ambulatorial', city: 'Belo Horizonte', phone: '(31) 9****-2345', email: 'atendimento@sau***.com.br' },
-    { name: 'Restaurante Sabor & Arte', cnae: '5611-2/01', activity: 'Restaurantes e similares', city: 'Curitiba', phone: '(41) 9****-6789', email: 'reservas@sabo***.com.br' },
-    { name: 'Academia Fitness Pro', cnae: '9313-1/00', activity: 'Atividades de condicionamento físico', city: 'Porto Alegre', phone: '(51) 9****-0123', email: 'info@fitne***.com.br' },
+    { name: '22.******* ******** **** ***** ** ******', cnpj: '22.25*.***/*****-**', address: 'AVENIDA DOM SEVERINO, 824 - FATIMA', cep: '64049375', phone: '(XX) XXXX-XXXX' },
+    { name: '22.******* **** ********* ** **** ********', cnpj: '22.91*.***/*****-**', address: 'RUA CARLOS B., 3294 - VALE QUEM TEM', cep: '64057490', phone: '(XX) XXXX-XXXX' },
+    { name: '23.******* ******** **** ** ******', cnpj: '23.18*.***/*****-**', address: 'RUA SIMPLÍCIO MENDES, 1520 - CENTRO', cep: '64001120', phone: '(XX) XXXX-XXXX' },
   ];
+
+  // Animation states
+  const [showResults, setShowResults] = useState(false);
+  const [visibleItems, setVisibleItems] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    // Auto-play animation every 8 seconds
+    const runAnimation = () => {
+      setShowResults(false);
+      setVisibleItems(0);
+      setIsSearching(true);
+
+      // Show searching state for 1.5s
+      setTimeout(() => {
+        setIsSearching(false);
+        setShowResults(true);
+        
+        // Reveal items one by one
+        mockLeads.forEach((_, index) => {
+          setTimeout(() => {
+            setVisibleItems(prev => prev + 1);
+          }, 300 * (index + 1));
+        });
+      }, 1500);
+    };
+
+    runAnimation();
+    const interval = setInterval(runAnimation, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Pacotes reais do sistema
   const plans = [
@@ -256,129 +289,149 @@ const Landing = () => {
               Veja a plataforma em <span className="text-gradient">ação</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Simule uma busca e veja o tipo de dados que você terá acesso ao se cadastrar.
+              Veja como é fácil buscar empresas por CNAE e ter acesso aos dados.
             </p>
           </div>
 
-          {/* Interactive Mockup */}
-          <div className="max-w-5xl mx-auto">
-            <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-2xl glow-primary">
-              {/* Mockup Header */}
-              <div className="bg-secondary/50 border-b border-border/50 p-4 flex items-center gap-3">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                  <div className="w-3 h-3 rounded-full bg-warning/60" />
-                  <div className="w-3 h-3 rounded-full bg-success/60" />
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="bg-background/50 rounded-lg px-4 py-1.5 text-sm text-muted-foreground flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    acheileads.com.br/buscar
-                  </div>
-                </div>
-              </div>
-
-              {/* Search Bar */}
+          {/* Interactive Mockup - Dialog Style */}
+          <div className="max-w-2xl mx-auto">
+            <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-2xl">
+              {/* Dialog Header */}
               <div className="p-6 border-b border-border/50">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <input 
-                      type="text" 
-                      placeholder="Buscar por CNAE, atividade econômica ou cidade..."
-                      className="w-full pl-12 pr-4 py-3 rounded-xl bg-secondary/50 border border-border/50 focus:outline-none focus:border-primary/50 transition-colors"
-                      defaultValue="5611-2/01 - Restaurantes em São Paulo"
-                    />
-                  </div>
-                  <Button className="gradient-primary border-0 px-8">
-                    <Search className="h-5 w-5 mr-2" />
-                    Buscar
-                  </Button>
+                <div className="flex items-center gap-3 mb-2">
+                  <FileText className="h-6 w-6 text-primary" />
+                  <h3 className="text-xl font-bold">Buscar Empresas por CNAE</h3>
                 </div>
+                <p className="text-sm text-muted-foreground">Busque empresas por CNAE, UF e cidade</p>
               </div>
 
-              {/* Results */}
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm text-muted-foreground">
-                    Encontradas <span className="text-foreground font-semibold">2.847</span> empresas
-                  </span>
-                  <Badge variant="secondary" className="text-xs">
-                    <Zap className="h-3 w-3 mr-1" />
-                    Dados em tempo real
-                  </Badge>
+              {/* Search Form */}
+              <div className="p-6 space-y-4">
+                {/* CNAE Field */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">CNAE - Atividade</label>
+                  <div className="relative">
+                    <div className="w-full px-4 py-3 rounded-lg bg-secondary/50 border border-border/50 flex items-center justify-between">
+                      <span className="text-sm">9609-2/08 - HIGIENE E EMBELEZAMENTO DE ANIMAIS DOMÉSTICOS</span>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-3">
-                  {mockLeads.map((lead, index) => (
-                    <div 
-                      key={index}
-                      className="p-4 rounded-xl bg-secondary/30 border border-border/30 hover:border-primary/30 transition-all cursor-pointer group"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-lg gradient-accent flex items-center justify-center shrink-0">
-                            <Building2 className="h-5 w-5 text-accent-foreground" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold group-hover:text-primary transition-colors">{lead.name}</h4>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs font-mono">{lead.cnae}</Badge>
-                              <span className="text-xs text-muted-foreground">{lead.activity}</span>
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                {/* UF and City */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">UF</label>
+                    <div className="w-full px-4 py-3 rounded-lg bg-secondary/50 border border-border/50 flex items-center justify-between">
+                      <span className="text-sm">PI</span>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Cidade</label>
+                    <div className="w-full px-4 py-3 rounded-lg bg-secondary/50 border border-border/50">
+                      <span className="text-sm">Teresina</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Checkbox */}
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded border-2 border-primary bg-primary flex items-center justify-center">
+                    <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+                  </div>
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">Somente com telefone</span>
+                </div>
+
+                {/* Search Button */}
+                <Button 
+                  className={`w-full gradient-primary border-0 py-6 text-base transition-all ${isSearching ? 'animate-pulse' : ''}`}
+                  disabled={isSearching}
+                >
+                  <Search className="h-5 w-5 mr-2" />
+                  {isSearching ? 'Buscando...' : 'Buscar Empresas'}
+                </Button>
+              </div>
+
+              {/* Results Section */}
+              <div className={`border-t border-border/50 transition-all duration-500 ${showResults ? 'opacity-100' : 'opacity-0'}`}>
+                {showResults && (
+                  <div className="p-6">
+                    {/* Results Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm text-muted-foreground">
+                        <span className="text-foreground font-semibold">50</span> resultado(s) encontrado(s)
+                      </span>
+                      <div className="flex items-center gap-4">
+                        <Button variant="outline" size="sm">Selecionar todos</Button>
+                        <span className="text-xs text-muted-foreground">
+                          💰 Custo: 0 crédito(s) | Saldo: 6
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Results List */}
+                    <div className="space-y-3">
+                      {mockLeads.map((lead, index) => (
+                        <div 
+                          key={index}
+                          className={`p-4 rounded-xl bg-secondary/30 border border-border/30 transition-all duration-500 ${
+                            index < visibleItems ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                          }`}
+                          style={{ transitionDelay: `${index * 100}ms` }}
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Checkbox */}
+                            <div className="w-5 h-5 rounded-full border-2 border-border mt-1 shrink-0" />
+                            
+                            {/* Company Icon */}
+                            <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                              <FileText className="h-4 w-4 text-primary" />
+                            </div>
+                            
+                            {/* Company Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-medium text-sm">{lead.name}</span>
+                                <Badge variant="outline" className="text-xs font-mono">{lead.cnpj}</Badge>
+                                <Lock className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                                 <MapPin className="h-3 w-3" />
-                                {lead.city}
-                              </span>
+                                {lead.address} - CEP: {lead.cep}
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                <Phone className="h-3 w-3" />
+                                {lead.phone}
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            <Phone className="h-4 w-4" />
-                            {lead.phone}
-                          </span>
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            <Mail className="h-4 w-4" />
-                            {lead.email}
-                          </span>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                {/* Blur overlay for locked content */}
-                <div className="relative mt-4">
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent z-10 flex items-center justify-center">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 rounded-full glass flex items-center justify-center mx-auto mb-4">
-                        <Shield className="h-8 w-8 text-primary" />
-                      </div>
-                      <h4 className="text-lg font-semibold mb-2">Desbloqueie todos os dados</h4>
-                      <p className="text-muted-foreground text-sm mb-4">
-                        Cadastre-se gratuitamente e comece a prospectar
+                    {/* Unlock CTA */}
+                    <div className="mt-6 p-4 rounded-xl bg-primary/10 border border-primary/20 text-center">
+                      <p className="text-sm mb-3">
+                        <Lock className="h-4 w-4 inline mr-1" />
+                        Dados ocultos - <span className="text-primary font-medium">Desbloqueie com créditos</span>
                       </p>
                       <Link to="/auth">
-                        <Button className="gradient-primary border-0">
+                        <Button size="sm" className="gradient-primary border-0">
                           Criar Conta Grátis
                           <ChevronRight className="ml-1 h-4 w-4" />
                         </Button>
                       </Link>
                     </div>
                   </div>
-                  <div className="blur-sm opacity-50 pointer-events-none">
-                    {mockLeads.slice(0, 2).map((lead, index) => (
-                      <div key={index} className="p-4 rounded-xl bg-secondary/30 border border-border/30 mb-3">
-                        <div className="h-12 bg-secondary/50 rounded" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </section>
+
 
       {/* Benefits Section */}
       <section className="py-20">
