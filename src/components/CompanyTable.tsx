@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { MapPin, Building2, RefreshCw, CheckCircle, Phone, Trash2, Loader2 } from 'lucide-react';
+import { MapPin, Building2, RefreshCw, CheckCircle, Phone, Trash2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PhoneStatusBadge } from './PhoneStatusBadge';
 import { Company } from '@/types';
 import { validatePhones, deleteCompany } from '@/lib/api';
@@ -17,6 +18,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
 interface CompanyTableProps {
   companies: Company[];
   onPhonesValidated?: () => void;
@@ -31,6 +34,15 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+
+  const totalPages = Math.ceil(companies.length / itemsPerPage);
+  
+  const paginatedCompanies = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return companies.slice(startIndex, startIndex + itemsPerPage);
+  }, [companies, currentPage, itemsPerPage]);
 
   const allPendingPhoneIds = useMemo(() => {
     return companies.flatMap(c => 
@@ -155,10 +167,10 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === companies.length) {
+    if (selectedIds.size === paginatedCompanies.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(companies.map(c => c.id)));
+      setSelectedIds(new Set(paginatedCompanies.map(c => c.id)));
     }
   };
 
@@ -172,6 +184,17 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
       }
       return newSet;
     });
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setSelectedIds(new Set());
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
+    setSelectedIds(new Set());
   };
 
   const formatPhone = (phone: string) => {
@@ -263,7 +286,7 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
       
       {/* Mobile Card Layout */}
       <div className="md:hidden divide-y divide-border/30">
-        {companies.map((company, index) => (
+        {paginatedCompanies.map((company, index) => (
           <div 
             key={company.id}
             className="p-4 space-y-3 animate-fade-up"
@@ -370,7 +393,7 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
             <tr className="border-b border-border/50 bg-secondary/30">
               <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-4 w-12">
                 <Checkbox
-                  checked={selectedIds.size === companies.length && companies.length > 0}
+                  checked={selectedIds.size === paginatedCompanies.length && paginatedCompanies.length > 0}
                   onCheckedChange={toggleSelectAll}
                 />
               </th>
@@ -392,7 +415,7 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
             </tr>
           </thead>
           <tbody className="divide-y divide-border/30">
-            {companies.map((company, index) => (
+            {paginatedCompanies.map((company, index) => (
               <tr 
                 key={company.id}
                 className={`hover:bg-secondary/20 transition-colors animate-fade-up ${selectedIds.has(company.id) ? 'bg-primary/5' : ''}`}
@@ -496,6 +519,77 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }:
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="p-4 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Exibindo</span>
+            <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+              <SelectTrigger className="w-[70px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ITEMS_PER_PAGE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={String(option)}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>de {companies.length}</span>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            {/* Page numbers */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="icon"
+                    className="h-8 w-8 text-xs"
+                    onClick={() => handlePageChange(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
