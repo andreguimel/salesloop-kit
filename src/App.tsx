@@ -16,6 +16,7 @@ import CRM from "./pages/CRM";
 import Settings from "./pages/Settings";
 import Credits from "./pages/Credits";
 import Auth from "./pages/Auth";
+import TermosDeUso from "./pages/TermosDeUso";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,13 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Credits />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/termos-de-uso" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <TermosDeUso />
                   </AppLayout>
                 </ProtectedRoute>
               } />
