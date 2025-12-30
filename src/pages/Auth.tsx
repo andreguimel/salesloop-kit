@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Mail, Lock, User, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, ArrowRight, Loader2, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +31,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isHuman, setIsHuman] = useState(false);
   
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
@@ -92,6 +94,15 @@ export default function Auth() {
     
     if (isResetPassword) {
       await handleResetPassword();
+      return;
+    }
+
+    if (!isHuman) {
+      toast({
+        title: 'Verificação necessária',
+        description: 'Por favor, confirme que você não é um robô.',
+        variant: 'destructive',
+      });
       return;
     }
     
@@ -280,6 +291,24 @@ export default function Auth() {
                 >
                   Esqueceu sua senha?
                 </button>
+              </div>
+            )}
+
+            {!isResetPassword && (
+              <div className="flex items-center space-x-3 p-4 rounded-lg border border-border/50 bg-secondary/30">
+                <Checkbox
+                  id="not-robot"
+                  checked={isHuman}
+                  onCheckedChange={(checked) => setIsHuman(checked === true)}
+                  className="h-5 w-5"
+                />
+                <label
+                  htmlFor="not-robot"
+                  className="flex items-center gap-2 text-sm font-medium cursor-pointer select-none"
+                >
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  Não sou um robô
+                </label>
               </div>
             )}
 
