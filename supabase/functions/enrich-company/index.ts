@@ -40,7 +40,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Enriching company:', company.name);
+    console.log('Enriching company:', company.name, 'CNPJ:', company.cnpj);
 
     const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -61,9 +61,24 @@ serve(async (req) => {
       );
     }
 
-    // Step 1: Search with Firecrawl - busca principal
-    const searchQuery = `"${company.name}" ${company.city} ${company.state} site oficial contato email`;
-    console.log('Firecrawl search query:', searchQuery);
+    // Clean CNPJ for search (remove formatting)
+    const cleanCnpj = company.cnpj?.replace(/\D/g, '') || '';
+    const hasCnpj = cleanCnpj.length === 14;
+
+    // Step 1: Primary search - prioritize CNPJ if available
+    let primarySearchQuery: string;
+    if (hasCnpj) {
+      // Format CNPJ for better search results: XX.XXX.XXX/XXXX-XX
+      const formattedCnpj = cleanCnpj.replace(
+        /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
+        '$1.$2.$3/$4-$5'
+      );
+      primarySearchQuery = `CNPJ ${formattedCnpj} OR "${formattedCnpj}" empresa site oficial`;
+      console.log('Using CNPJ-based search:', primarySearchQuery);
+    } else {
+      primarySearchQuery = `"${company.name}" ${company.city} ${company.state} empresa site oficial contato`;
+      console.log('Using name-based search:', primarySearchQuery);
+    }
 
     const firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
@@ -72,8 +87,8 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: searchQuery,
-        limit: 8,
+        query: primarySearchQuery,
+        limit: 10,
         scrapeOptions: {
           formats: ['markdown', 'links'],
         },
@@ -90,10 +105,41 @@ serve(async (req) => {
     }
 
     const firecrawlData = await firecrawlResponse.json();
-    console.log('Firecrawl results count:', firecrawlData.data?.length || 0);
+    console.log('Primary search results count:', firecrawlData.data?.length || 0);
 
-    // Step 1.5: Search for social media profiles
-    const socialSearchQuery = `"${company.name}" ${company.city} instagram facebook linkedin`;
+    // Step 2: Secondary search for contact info
+    const contactSearchQuery = hasCnpj 
+      ? `CNPJ ${cleanCnpj} contato email telefone endereço`
+      : `"${company.name}" ${company.city} contato email telefone`;
+    
+    console.log('Contact search query:', contactSearchQuery);
+
+    const contactResponse = await fetch('https://api.firecrawl.dev/v1/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: contactSearchQuery,
+        limit: 5,
+        scrapeOptions: {
+          formats: ['markdown', 'links'],
+        },
+      }),
+    });
+
+    let contactData: any = { data: [] };
+    if (contactResponse.ok) {
+      contactData = await contactResponse.json();
+      console.log('Contact search results count:', contactData.data?.length || 0);
+    }
+
+    // Step 3: Search for social media profiles
+    const socialSearchQuery = hasCnpj
+      ? `CNPJ ${cleanCnpj} instagram facebook linkedin`
+      : `"${company.name}" ${company.city} instagram facebook linkedin`;
+    
     console.log('Social media search query:', socialSearchQuery);
 
     const socialResponse = await fetch('https://api.firecrawl.dev/v1/search', {
@@ -118,52 +164,59 @@ serve(async (req) => {
     }
 
     // Combine all search results
-    const allResults = [...(firecrawlData.data || []), ...(socialData.data || [])];
+    const allResults = [
+      ...(firecrawlData.data || []), 
+      ...(contactData.data || []),
+      ...(socialData.data || [])
+    ];
 
     // Combine search results for AI processing
     const searchContent = allResults.map((result: any) => {
-      const links = result.links?.slice(0, 10)?.join('\n') || '';
-      return `URL: ${result.url}\nTítulo: ${result.title || 'N/A'}\nLinks encontrados:\n${links}\nConteúdo: ${result.markdown?.slice(0, 2000) || result.description || 'N/A'}`;
+      const links = result.links?.slice(0, 15)?.join('\n') || '';
+      return `URL: ${result.url}\nTítulo: ${result.title || 'N/A'}\nLinks encontrados:\n${links}\nConteúdo: ${result.markdown?.slice(0, 2500) || result.description || 'N/A'}`;
     }).join('\n\n---\n\n') || 'Nenhum resultado encontrado';
 
-    // Step 2: Process with Lovable AI to extract structured data
     // Check if company name contains asterisks or seems incomplete
     const nameHasAsterisks = company.name.includes('*') || company.name.includes('**');
     
-    const aiPrompt = `Analise os resultados de busca abaixo sobre a empresa "${company.name}" localizada em ${company.city}, ${company.state}.
+    const aiPrompt = `Analise os resultados de busca abaixo sobre a empresa com os seguintes dados:
+- Nome cadastrado: "${company.name}"
+- CNPJ: ${company.cnpj || 'Não informado'}
+- Cidade: ${company.city}
+- Estado: ${company.state}
 
-Extraia as seguintes informações (se encontradas):
-1. ${nameHasAsterisks ? 'NOME REAL/COMPLETO da empresa (sem asteriscos ou mascaramento) - MUITO IMPORTANTE' : 'Nome da empresa (se encontrar um nome mais completo ou correto)'}
-2. Website oficial da empresa (URL completa)
-3. Email de contato REAL e COMPLETO (sem asteriscos ou mascaramento)
-4. Instagram (URL completa ou @usuario)
-5. Facebook (URL completa)
-6. LinkedIn (URL completa)
-7. Um breve resumo sobre a empresa (máximo 150 palavras)
+TAREFA: Extraia as informações REAIS desta empresa específica a partir dos resultados de busca.
 
-REGRAS IMPORTANTES: 
-- Retorne APENAS um JSON válido, sem markdown, sem blocos de código, sem texto adicional
-- Se não encontrar uma informação, use null
-${nameHasAsterisks ? '- O nome atual "${company.name}" contém asteriscos/mascaramento. PROCURE o nome real da empresa nos resultados e retorne-o no campo "name"' : '- Se encontrar o nome completo/correto da empresa, retorne no campo "name", caso contrário use null'}
-- IGNORE emails mascarados com asteriscos (***) ou parciais - retorne null nesses casos
-- Para redes sociais, procure nos links e no conteúdo - inclua apenas perfis oficiais da empresa
-- URLs de Instagram devem começar com https://instagram.com/ ou https://www.instagram.com/
-- URLs de Facebook devem começar com https://facebook.com/ ou https://www.facebook.com/
-- URLs de LinkedIn devem começar com https://linkedin.com/ ou https://www.linkedin.com/
-- Valide que os dados são realmente da empresa
+INFORMAÇÕES A EXTRAIR:
+1. ${nameHasAsterisks ? 'NOME REAL/COMPLETO da empresa (sem asteriscos ou mascaramento) - MUITO IMPORTANTE' : 'Nome completo/razão social da empresa (se encontrar)'}
+2. Website oficial (URL completa começando com https://)
+3. Email de contato (email completo e válido, sem asteriscos)
+4. Instagram oficial (@usuario ou URL completa)
+5. Facebook oficial (URL completa)
+6. LinkedIn da empresa (URL completa)
+7. Resumo sobre a empresa (máximo 150 palavras descrevendo o que a empresa faz)
 
-Formato de resposta (apenas o JSON, nada mais):
+REGRAS CRÍTICAS:
+- Retorne APENAS um JSON válido, sem markdown, sem código, sem texto adicional
+- Se não encontrar uma informação com certeza, use null
+- VALIDE que as informações são realmente DESTA empresa (confira o CNPJ ${company.cnpj || ''} se disponível)
+- IGNORE emails mascarados com asteriscos (***) - retorne null
+- IGNORE informações de outras empresas que aparecem nos resultados
+- Para redes sociais, retorne apenas perfis oficiais verificados da empresa
+- O website deve ser o site oficial da empresa, não diretórios ou listas
+
+Formato EXATO de resposta (apenas o JSON):
 {
-  "name": "Nome Real da Empresa" ou null,
-  "website": "https://...",
-  "email": "contato@...",
-  "instagram": "https://instagram.com/...",
-  "facebook": "https://facebook.com/...",
-  "linkedin": "https://linkedin.com/...",
-  "summary": "Resumo sobre a empresa..."
+  "name": "Razão Social Completa" ou null,
+  "website": "https://www.empresa.com.br" ou null,
+  "email": "contato@empresa.com.br" ou null,
+  "instagram": "https://instagram.com/empresa" ou null,
+  "facebook": "https://facebook.com/empresa" ou null,
+  "linkedin": "https://linkedin.com/company/empresa" ou null,
+  "summary": "Descrição do que a empresa faz..." ou null
 }
 
-Resultados da busca:
+RESULTADOS DA BUSCA:
 ${searchContent}`;
 
     console.log('Calling Lovable AI for data extraction...');
@@ -179,7 +232,7 @@ ${searchContent}`;
         messages: [
           {
             role: 'system',
-            content: 'Você é um assistente especializado em extrair informações de contato de empresas a partir de resultados de busca. Sempre retorne JSON válido.'
+            content: 'Você é um especialista em extração de dados empresariais. Sua tarefa é analisar resultados de busca e extrair informações precisas e verificadas sobre empresas brasileiras. Sempre valide que os dados correspondem à empresa correta usando o CNPJ quando disponível. Retorne apenas JSON válido.'
           },
           {
             role: 'user',
@@ -221,19 +274,20 @@ ${searchContent}`;
       const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
+        
+        // Validate and clean data
         enrichmentResult = {
-          name: parsed.name || null,
-          website: parsed.website || null,
-          email: parsed.email || null,
-          instagram: parsed.instagram || null,
-          facebook: parsed.facebook || null,
-          linkedin: parsed.linkedin || null,
+          name: parsed.name && !parsed.name.includes('*') ? parsed.name : null,
+          website: parsed.website && parsed.website.startsWith('http') ? parsed.website : null,
+          email: parsed.email && parsed.email.includes('@') && !parsed.email.includes('*') ? parsed.email : null,
+          instagram: parsed.instagram && (parsed.instagram.includes('instagram.com') || parsed.instagram.startsWith('@')) ? parsed.instagram : null,
+          facebook: parsed.facebook && parsed.facebook.includes('facebook.com') ? parsed.facebook : null,
+          linkedin: parsed.linkedin && parsed.linkedin.includes('linkedin.com') ? parsed.linkedin : null,
           aiSummary: parsed.summary || null,
         };
       }
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
-      // Return partial success with what we have
       enrichmentResult = {
         aiSummary: 'Não foi possível extrair informações estruturadas desta empresa.',
       };
