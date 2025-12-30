@@ -1,4 +1,4 @@
-import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings, Moon, Sun, Coins, FileText } from "lucide-react";
+import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings, Moon, Sun, Coins, FileText, Shield } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -169,18 +169,31 @@ export function AppSidebar() {
           {!collapsed && <span>{isDark ? "Tema Claro" : "Tema Escuro"}</span>}
         </Button>
 
-        {/* Terms of Use Link */}
-        <Link 
-          to="/termos-de-uso"
-          className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors",
-            "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent",
-            currentPath === "/termos-de-uso" && "bg-sidebar-accent text-sidebar-foreground"
-          )}
-        >
-          <FileText className="h-4 w-4" />
-          {!collapsed && <span>Termos de Uso</span>}
-        </Link>
+        {/* Terms and Privacy Links */}
+        <div className="flex flex-col gap-1">
+          <Link 
+            to="/termos-de-uso"
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors",
+              "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+              currentPath === "/termos-de-uso" && "bg-sidebar-accent text-sidebar-foreground"
+            )}
+          >
+            <FileText className="h-4 w-4" />
+            {!collapsed && <span>Termos de Uso</span>}
+          </Link>
+          <Link 
+            to="/politica-privacidade"
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors",
+              "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+              currentPath === "/politica-privacidade" && "bg-sidebar-accent text-sidebar-foreground"
+            )}
+          >
+            <Shield className="h-4 w-4" />
+            {!collapsed && <span>Privacidade</span>}
+          </Link>
+        </div>
 
         {!collapsed && user && (
           <div className="px-2">
