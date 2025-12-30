@@ -45,8 +45,29 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const { toast } = useToast();
+
+  const ITEMS_PER_PAGE = 50;
+
+  const applyFilters = (companies: SearchResult[]) => {
+    let filtered = companies;
+    
+    if (onlyWithPhone) {
+      filtered = filtered.filter((c: SearchResult) => 
+        c.telefone1 || c.telefone2 || c.telefone || c.phone
+      );
+    }
+    
+    if (onlyWithEmail) {
+      filtered = filtered.filter((c: SearchResult) => c.email);
+    }
+    
+    return filtered;
+  };
 
   const handleSearch = async () => {
     if (!cnae.trim() || cnae.length < 2) {
@@ -60,33 +81,25 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
     setIsSearching(true);
     setResults([]);
     setSelectedResults(new Set());
+    setCurrentPage(1);
+    setHasMore(false);
 
     try {
       const { data, error } = await supabase.functions.invoke('search-api', {
-        body: { cnae, uf, cidade, limit: 50 },
+        body: { cnae, uf, cidade, page: 1, limit: ITEMS_PER_PAGE },
       });
 
       if (error) throw error;
 
-      // Handle different response formats
-      let companies = Array.isArray(data) 
+      const companies = Array.isArray(data) 
         ? data 
         : data?.companies || data?.data || data?.results || [];
 
-      // Apply local filters
-      if (onlyWithPhone) {
-        companies = companies.filter((c: SearchResult) => 
-          c.telefone1 || c.telefone2 || c.telefone || c.phone
-        );
-      }
-      
-      if (onlyWithEmail) {
-        companies = companies.filter((c: SearchResult) => c.email);
-      }
+      const filtered = applyFilters(companies);
+      setResults(filtered);
+      setHasMore(companies.length === ITEMS_PER_PAGE);
 
-      setResults(companies);
-
-      if (companies.length === 0) {
+      if (filtered.length === 0) {
         toast({
           title: 'Nenhum resultado encontrado',
           description: 'Tente outra busca',
@@ -101,6 +114,38 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
       });
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    const nextPage = currentPage + 1;
+    setIsLoadingMore(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('search-api', {
+        body: { cnae, uf, cidade, page: nextPage, limit: ITEMS_PER_PAGE },
+      });
+
+      if (error) throw error;
+
+      const companies = Array.isArray(data) 
+        ? data 
+        : data?.companies || data?.data || data?.results || [];
+
+      const filtered = applyFilters(companies);
+      setResults(prev => [...prev, ...filtered]);
+      setCurrentPage(nextPage);
+      setHasMore(companies.length === ITEMS_PER_PAGE);
+
+    } catch (error: any) {
+      console.error('Load more error:', error);
+      toast({
+        title: 'Erro ao carregar mais',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -402,6 +447,25 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                       </div>
                     );
                   })}
+                  
+                  {/* Load More Button */}
+                  {hasMore && (
+                    <div className="pt-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={handleLoadMore} 
+                        disabled={isLoadingMore}
+                        className="w-full gap-2"
+                      >
+                        {isLoadingMore ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4" />
+                        )}
+                        Carregar mais resultados
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             </>
