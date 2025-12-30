@@ -45,6 +45,10 @@ export interface SearchFilters {
   cnae: string;
   city: string;
   segment: string;
+  name: string;
+  enrichmentStatus: 'all' | 'enriched' | 'not_enriched';
+  crmStageId: string;
+  sortBy: 'newest' | 'oldest' | 'name_asc' | 'name_desc' | 'city_asc';
 }
 
 export interface DashboardMetrics {

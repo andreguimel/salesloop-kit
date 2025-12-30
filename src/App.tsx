@@ -12,6 +12,7 @@ import CompanyDetails from "./pages/CompanyDetails";
 import History from "./pages/History";
 import Reports from "./pages/Reports";
 import CRM from "./pages/CRM";
+import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -65,6 +66,13 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <CRM />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/configuracoes" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Settings />
                 </AppLayout>
               </ProtectedRoute>
             } />
