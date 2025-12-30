@@ -222,7 +222,6 @@ const SearchCompanies = () => {
       {/* Company Table */}
       <CompanyTable
         companies={filteredCompanies}
-        onPhonesValidated={loadData}
         onCompanyDeleted={loadData}
         onCompanyEnriched={loadData}
       />

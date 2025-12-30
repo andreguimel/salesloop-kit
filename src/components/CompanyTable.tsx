@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { PhoneStatusBadge } from './PhoneStatusBadge';
 import { ExportCsvDialog } from './ExportCsvDialog';
 import { Company } from '@/types';
-import { validatePhones, deleteCompany, enrichCompany, enrichCompanies } from '@/lib/api';
+import { deleteCompany, enrichCompany, enrichCompanies } from '@/lib/api';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -26,19 +26,16 @@ const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
 interface CompanyTableProps {
   companies: Company[];
-  onPhonesValidated?: () => void;
   onCompanyDeleted?: () => void;
   onCompanyEnriched?: () => void;
 }
 
-export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, onCompanyEnriched }: CompanyTableProps) {
+export function CompanyTable({ companies, onCompanyDeleted, onCompanyEnriched }: CompanyTableProps) {
   const navigate = useNavigate();
-  const [validatingCompanyId, setValidatingCompanyId] = useState<string | null>(null);
   const [deletingCompanyId, setDeletingCompanyId] = useState<string | null>(null);
   const [enrichingCompanyId, setEnrichingCompanyId] = useState<string | null>(null);
   const [isEnrichingSelected, setIsEnrichingSelected] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
-  const [isValidatingAll, setIsValidatingAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
@@ -53,12 +50,6 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
     return companies.slice(startIndex, startIndex + itemsPerPage);
   }, [companies, currentPage, itemsPerPage]);
 
-  const allPendingPhoneIds = useMemo(() => {
-    return companies.flatMap(c => 
-      c.phones.filter(p => p.status === 'pending' && p.id).map(p => p.id!)
-    );
-  }, [companies]);
-
   const selectedCompanies = useMemo(() => {
     return companies.filter(c => selectedIds.has(c.id));
   }, [companies, selectedIds]);
@@ -66,65 +57,6 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
   const notEnrichedSelectedCount = useMemo(() => {
     return selectedCompanies.filter(c => !c.enrichedAt).length;
   }, [selectedCompanies]);
-
-  const handleValidatePhones = async (company: Company) => {
-    const pendingPhones = company.phones.filter(p => p.status === 'pending' && p.id);
-    
-    if (pendingPhones.length === 0) {
-      toast.info('Não há telefones pendentes para validar WhatsApp');
-      return;
-    }
-
-    setValidatingCompanyId(company.id);
-    
-    try {
-      const phoneIds = pendingPhones.map(p => p.id!);
-      const result = await validatePhones(phoneIds);
-      
-      toast.success(
-        `WhatsApp: ${result.summary.valid} com WhatsApp, ${result.summary.invalid} sem WhatsApp`,
-        { description: `${result.summary.uncertain} incertos` }
-      );
-      
-      onPhonesValidated?.();
-    } catch (error) {
-      console.error('Error validating phones:', error);
-      toast.error('Erro ao validar WhatsApp', {
-        description: error instanceof Error ? error.message : 'Tente novamente'
-      });
-    } finally {
-      setValidatingCompanyId(null);
-    }
-  };
-
-  const handleValidateAllPhones = async () => {
-    if (allPendingPhoneIds.length === 0) {
-      toast.info('Não há telefones pendentes para validar WhatsApp');
-      return;
-    }
-
-    setIsValidatingAll(true);
-    
-    try {
-      const result = await validatePhones(allPendingPhoneIds);
-      
-      toast.success(
-        `Validação de WhatsApp concluída!`,
-        { 
-          description: `${result.summary.valid} com WhatsApp, ${result.summary.invalid} sem WhatsApp, ${result.summary.uncertain} incertos` 
-        }
-      );
-      
-      onPhonesValidated?.();
-    } catch (error) {
-      console.error('Error validating all phones:', error);
-      toast.error('Erro ao validar WhatsApp', {
-        description: error instanceof Error ? error.message : 'Tente novamente'
-      });
-    } finally {
-      setIsValidatingAll(false);
-    }
-  };
 
   const handleEnrichCompany = async (company: Company) => {
     if (company.enrichedAt) {
@@ -362,29 +294,6 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
                 <span className="sm:hidden">Excluir ({selectedIds.size})</span>
               </Button>
             </>
-          )}
-          {allPendingPhoneIds.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleValidateAllPhones}
-              disabled={isValidatingAll}
-              className="gap-2 text-xs font-medium border-primary/30 hover:bg-primary/10"
-            >
-              {isValidatingAll ? (
-                <>
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  <span className="hidden sm:inline">Validando WhatsApp...</span>
-                  <span className="sm:hidden">Validando...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Validar WhatsApp ({allPendingPhoneIds.length})</span>
-                  <span className="sm:hidden">WhatsApp ({allPendingPhoneIds.length})</span>
-                </>
-              )}
-            </Button>
           )}
           <span className="text-sm text-muted-foreground px-3 py-1 rounded-full bg-secondary">
             {companies.length} resultado{companies.length !== 1 ? 's' : ''}

@@ -205,7 +205,6 @@ const Index = () => {
           {/* Company Table - Full Width */}
           <CompanyTable
             companies={filteredCompanies}
-            onPhonesValidated={loadData}
           />
         </main>
 
