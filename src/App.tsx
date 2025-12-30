@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
+import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import SearchCompanies from "./pages/SearchCompanies";
 import CompanyDetails from "./pages/CompanyDetails";
@@ -31,8 +32,9 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={
+              <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <AppLayout>
                     <Dashboard />
