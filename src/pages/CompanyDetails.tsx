@@ -267,12 +267,12 @@ const CompanyDetails = () => {
             {/* Parse name to show Razão Social and Nome Fantasia separately */}
             {company.name.includes(' | ') ? (
               <>
-                <div>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Razão Social</span>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Razão Social</p>
                   <h1 className="text-xl md:text-2xl font-bold tracking-tight">{company.name.split(' | ')[0]}</h1>
                 </div>
-                <div>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Nome Fantasia</span>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Nome Fantasia</p>
                   <h2 className="text-lg md:text-xl font-semibold text-primary">{company.name.split(' | ')[1]}</h2>
                 </div>
               </>
