@@ -519,18 +519,38 @@ export async function importCompanyFromSearch(searchResult: SearchCompanyResult)
 
   if (companyError) throw companyError;
 
-  // Add phones if available
+  // Add phones if available (avoiding duplicates)
   const phones: string[] = [];
-  if (searchResult.phone1) phones.push(searchResult.phone1);
-  if (searchResult.phone2) phones.push(searchResult.phone2);
+  if (searchResult.phone1) {
+    const cleaned = searchResult.phone1.replace(/\D/g, '');
+    if (cleaned.length >= 10 && cleaned !== '0000000000') {
+      phones.push(cleaned);
+    }
+  }
+  if (searchResult.phone2) {
+    const cleaned = searchResult.phone2.replace(/\D/g, '');
+    if (cleaned.length >= 10 && cleaned !== '0000000000' && !phones.includes(cleaned)) {
+      phones.push(cleaned);
+    }
+  }
 
   for (const phone of phones) {
-    await supabase.from('company_phones').insert({
-      company_id: company.id,
-      phone_number: phone,
-      phone_type: phone.length > 10 ? 'mobile' : 'landline',
-      status: 'pending',
-    });
+    // Check if phone already exists for this company
+    const { data: existingPhone } = await supabase
+      .from('company_phones')
+      .select('id')
+      .eq('company_id', company.id)
+      .eq('phone_number', phone)
+      .maybeSingle();
+
+    if (!existingPhone) {
+      await supabase.from('company_phones').insert({
+        company_id: company.id,
+        phone_number: phone,
+        phone_type: phone.length > 10 ? 'mobile' : 'landline',
+        status: 'pending',
+      });
+    }
   }
 
   return company;

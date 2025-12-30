@@ -94,7 +94,9 @@ serve(async (req) => {
         console.log(`Checking WhatsApp for: ${cleanNumber}`);
 
         // Call Evolution API to check if number exists on WhatsApp
-        const evolutionUrl = `${evolutionApiUrl}/chat/whatsappNumbers/${evolutionInstanceName}`;
+        // Evolution API v2 endpoint: POST /chat/whatsappNumbers/{instance}
+        const baseUrl = evolutionApiUrl.replace(/\/+$/, ''); // Remove trailing slashes
+        const evolutionUrl = `${baseUrl}/chat/whatsappNumbers/${evolutionInstanceName}`;
         
         const evolutionResponse = await fetch(evolutionUrl, {
           method: 'POST',
