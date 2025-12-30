@@ -137,9 +137,9 @@ export function CrmMockupSection() {
         {/* Kanban Mockup */}
         <div className="max-w-5xl mx-auto">
           <div className="glass rounded-2xl border border-border/50 p-4 overflow-hidden shadow-2xl">
-            <div className="flex gap-4 overflow-x-auto pb-2">
+            <div className="flex gap-3 md:gap-4 overflow-x-auto pb-2 -mx-2 px-2 md:mx-0 md:px-0">
               {stages.map((stage) => (
-                <div key={stage.id} className="flex-shrink-0 w-64">
+                <div key={stage.id} className="flex-shrink-0 w-56 md:w-64">
                   <div className={`glass rounded-xl border overflow-hidden transition-all duration-300 ${
                     stage.id === 'fechado' ? 'border-success/30' : 
                     stage.id === 'proposta' ? 'border-primary/50 ring-2 ring-primary/30' : 

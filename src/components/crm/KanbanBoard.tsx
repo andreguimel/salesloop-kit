@@ -133,9 +133,9 @@ export function KanbanBoard({
   };
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 min-h-[500px]">
+    <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 min-h-[400px] md:min-h-[500px] -mx-4 px-4 md:mx-0 md:px-0">
       {/* Unassigned Column */}
-      <div className="flex-shrink-0 w-72">
+      <div className="flex-shrink-0 w-64 md:w-72">
         <Card className="h-full glass border-border/50">
           <CardHeader className="p-3 border-b border-border/30">
             <div className="flex items-center justify-between">
@@ -187,7 +187,7 @@ export function KanbanBoard({
         const isOver = dragOverStageId === stage.id;
 
         return (
-          <div key={stage.id} className="flex-shrink-0 w-72">
+          <div key={stage.id} className="flex-shrink-0 w-64 md:w-72">
             <Card 
               className={`h-full glass border-border/50 transition-all ${isOver ? 'ring-2 ring-primary' : ''}`}
               onDragOver={(e) => handleDragOver(e, stage.id)}
@@ -306,7 +306,7 @@ export function KanbanBoard({
       })}
 
       {/* Add Stage Button */}
-      <div className="flex-shrink-0 w-72">
+      <div className="flex-shrink-0 w-64 md:w-72">
         <Button
           variant="outline"
           className="w-full h-12 border-dashed gap-2"
