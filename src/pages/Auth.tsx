@@ -142,7 +142,7 @@ export default function Auth() {
             title: 'Conta criada!',
             description: 'Bem-vindo ao Achei Leads!',
           });
-          navigate('/');
+          navigate('/dashboard');
         }
       } else {
         const { error } = await signIn(email, password);
@@ -165,7 +165,7 @@ export default function Auth() {
             title: 'Bem-vindo de volta!',
             description: 'Login realizado com sucesso.',
           });
-          navigate('/');
+          navigate('/dashboard');
         }
       }
     } finally {
