@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
-import { FileBarChart, Building2, Phone, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { FileBarChart, Building2, Target, TrendingUp, DollarSign, Sparkles, Users, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 interface ReportData {
   totalCompanies: number;
-  totalPhones: number;
-  validPhones: number;
-  invalidPhones: number;
-  pendingPhones: number;
-  uncertainPhones: number;
+  enrichedCompanies: number;
+  companiesInCrm: number;
+  totalDealValue: number;
   companiesByState: Record<string, number>;
+  companiesByStage: { name: string; color: string; count: number; value: number }[];
+  recentCompanies: number;
+  companiesWithEmail: number;
 }
 
 const Reports = () => {
@@ -30,37 +32,65 @@ const Reports = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch companies with phones
+      // Fetch companies
       const { data: companies, error: companiesError } = await supabase
         .from('companies')
-        .select(`
-          id,
-          state,
-          company_phones (
-            id,
-            status
-          )
-        `)
+        .select('id, state, enriched_at, crm_stage_id, deal_value, email, created_at')
         .eq('user_id', user.id);
 
       if (companiesError) throw companiesError;
 
+      // Fetch CRM stages
+      const { data: stages, error: stagesError } = await supabase
+        .from('crm_pipeline_stages')
+        .select('id, name, color')
+        .eq('user_id', user.id)
+        .order('position');
+
+      if (stagesError) throw stagesError;
+
       // Calculate metrics
-      const allPhones = companies?.flatMap(c => c.company_phones) || [];
       const companiesByState: Record<string, number> = {};
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       
+      let enrichedCount = 0;
+      let inCrmCount = 0;
+      let totalValue = 0;
+      let recentCount = 0;
+      let withEmailCount = 0;
+
       companies?.forEach(c => {
         companiesByState[c.state] = (companiesByState[c.state] || 0) + 1;
+        if (c.enriched_at) enrichedCount++;
+        if (c.crm_stage_id) {
+          inCrmCount++;
+          totalValue += c.deal_value || 0;
+        }
+        if (c.email) withEmailCount++;
+        if (new Date(c.created_at) >= thirtyDaysAgo) recentCount++;
       });
+
+      // Calculate companies by stage
+      const companiesByStage = stages?.map(stage => {
+        const stageCompanies = companies?.filter(c => c.crm_stage_id === stage.id) || [];
+        return {
+          name: stage.name,
+          color: stage.color,
+          count: stageCompanies.length,
+          value: stageCompanies.reduce((sum, c) => sum + (c.deal_value || 0), 0)
+        };
+      }) || [];
 
       setData({
         totalCompanies: companies?.length || 0,
-        totalPhones: allPhones.length,
-        validPhones: allPhones.filter(p => p.status === 'valid').length,
-        invalidPhones: allPhones.filter(p => p.status === 'invalid').length,
-        pendingPhones: allPhones.filter(p => p.status === 'pending').length,
-        uncertainPhones: allPhones.filter(p => p.status === 'uncertain').length,
+        enrichedCompanies: enrichedCount,
+        companiesInCrm: inCrmCount,
+        totalDealValue: totalValue,
         companiesByState,
+        companiesByStage,
+        recentCompanies: recentCount,
+        companiesWithEmail: withEmailCount,
       });
     } catch (error) {
       console.error('Error loading report data:', error);
@@ -71,6 +101,15 @@ const Reports = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
   };
 
   if (isLoading) {
@@ -90,6 +129,14 @@ const Reports = () => {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
+  const enrichmentRate = data.totalCompanies > 0 
+    ? Math.round((data.enrichedCompanies / data.totalCompanies) * 100) 
+    : 0;
+
+  const crmRate = data.totalCompanies > 0 
+    ? Math.round((data.companiesInCrm / data.totalCompanies) * 100) 
+    : 0;
+
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
       {/* Background decoration */}
@@ -104,7 +151,7 @@ const Reports = () => {
           Relatórios
         </h1>
         <p className="text-sm md:text-base text-muted-foreground max-w-xl">
-          Análise detalhada da sua base de prospecção.
+          Análise detalhada da sua base de prospecção e pipeline de vendas.
         </p>
       </div>
 
@@ -119,131 +166,110 @@ const Reports = () => {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{data.totalCompanies}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              +{data.recentCompanies} nos últimos 30 dias
+            </p>
           </CardContent>
         </Card>
 
         <Card className="glass border-border/50">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
-              <Phone className="h-4 w-4" />
-              Total de Telefones
+              <Sparkles className="h-4 w-4" />
+              Enriquecidas
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{data.totalPhones}</p>
+            <p className="text-3xl font-bold">{data.enrichedCompanies}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {enrichmentRate}% do total
+            </p>
           </CardContent>
         </Card>
 
         <Card className="glass border-border/50">
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2 text-green-600">
-              <CheckCircle className="h-4 w-4" />
-              Telefones Válidos
+            <CardDescription className="flex items-center gap-2 text-primary">
+              <Target className="h-4 w-4" />
+              No Pipeline CRM
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-green-600">{data.validPhones}</p>
+            <p className="text-3xl font-bold text-primary">{data.companiesInCrm}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {crmRate}% do total
+            </p>
           </CardContent>
         </Card>
 
         <Card className="glass border-border/50">
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2 text-red-600">
-              <XCircle className="h-4 w-4" />
-              Telefones Inválidos
+            <CardDescription className="flex items-center gap-2 text-success">
+              <DollarSign className="h-4 w-4" />
+              Valor Total Pipeline
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-red-600">{data.invalidPhones}</p>
+            <p className="text-2xl md:text-3xl font-bold text-success">{formatCurrency(data.totalDealValue)}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              em oportunidades
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Detailed Reports */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Phone Status Breakdown */}
+        {/* Pipeline by Stage */}
         <Card className="glass border-border/50 animate-fade-up" style={{ animationDelay: '200ms' }}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5 text-primary" />
-              Status dos Telefones
+              <Target className="h-5 w-5 text-primary" />
+              Pipeline por Estágio
             </CardTitle>
-            <CardDescription>Distribuição por status de validação</CardDescription>
+            <CardDescription>Distribuição de leads no funil de vendas</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="text-sm">Válidos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{data.validPhones}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({data.totalPhones > 0 ? Math.round((data.validPhones / data.totalPhones) * 100) : 0}%)
-                  </span>
-                </div>
+            {data.companiesByStage.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>Nenhum estágio criado no CRM</p>
+                <p className="text-xs mt-1">Crie estágios no CRM para ver estatísticas aqui</p>
               </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <span className="text-sm">Inválidos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{data.invalidPhones}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({data.totalPhones > 0 ? Math.round((data.invalidPhones / data.totalPhones) * 100) : 0}%)
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                  <span className="text-sm">Incertos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{data.uncertainPhones}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({data.totalPhones > 0 ? Math.round((data.uncertainPhones / data.totalPhones) * 100) : 0}%)
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gray-400" />
-                  <span className="text-sm">Pendentes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{data.pendingPhones}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({data.totalPhones > 0 ? Math.round((data.pendingPhones / data.totalPhones) * 100) : 0}%)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress bar */}
-            {data.totalPhones > 0 && (
-              <div className="h-3 rounded-full bg-secondary overflow-hidden flex">
-                <div 
-                  className="bg-green-500 transition-all" 
-                  style={{ width: `${(data.validPhones / data.totalPhones) * 100}%` }} 
-                />
-                <div 
-                  className="bg-red-500 transition-all" 
-                  style={{ width: `${(data.invalidPhones / data.totalPhones) * 100}%` }} 
-                />
-                <div 
-                  className="bg-yellow-500 transition-all" 
-                  style={{ width: `${(data.uncertainPhones / data.totalPhones) * 100}%` }} 
-                />
-                <div 
-                  className="bg-gray-400 transition-all" 
-                  style={{ width: `${(data.pendingPhones / data.totalPhones) * 100}%` }} 
-                />
+            ) : (
+              <div className="space-y-3">
+                {data.companiesByStage.map((stage, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: stage.color }}
+                        />
+                        <span className="text-sm font-medium">{stage.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="secondary" className="text-xs">
+                          {stage.count} {stage.count === 1 ? 'empresa' : 'empresas'}
+                        </Badge>
+                        {stage.value > 0 && (
+                          <span className="text-xs text-success font-medium">
+                            {formatCurrency(stage.value)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                      <div 
+                        className="h-full rounded-full transition-all"
+                        style={{ 
+                          width: data.companiesInCrm > 0 ? `${(stage.count / data.companiesInCrm) * 100}%` : '0%',
+                          backgroundColor: stage.color 
+                        }} 
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
@@ -285,6 +311,44 @@ const Reports = () => {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Additional Metrics */}
+        <Card className="glass border-border/50 animate-fade-up lg:col-span-2" style={{ animationDelay: '300ms' }}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Métricas Adicionais
+            </CardTitle>
+            <CardDescription>Visão geral da qualidade dos dados</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-xl bg-secondary/30 border border-border/30 text-center">
+                <Sparkles className="h-6 w-6 mx-auto mb-2 text-primary" />
+                <p className="text-2xl font-bold">{enrichmentRate}%</p>
+                <p className="text-xs text-muted-foreground">Taxa de Enriquecimento</p>
+              </div>
+              
+              <div className="p-4 rounded-xl bg-secondary/30 border border-border/30 text-center">
+                <Target className="h-6 w-6 mx-auto mb-2 text-accent" />
+                <p className="text-2xl font-bold">{crmRate}%</p>
+                <p className="text-xs text-muted-foreground">Leads no CRM</p>
+              </div>
+              
+              <div className="p-4 rounded-xl bg-secondary/30 border border-border/30 text-center">
+                <Users className="h-6 w-6 mx-auto mb-2 text-success" />
+                <p className="text-2xl font-bold">{data.companiesWithEmail}</p>
+                <p className="text-xs text-muted-foreground">Com E-mail</p>
+              </div>
+              
+              <div className="p-4 rounded-xl bg-secondary/30 border border-border/30 text-center">
+                <Calendar className="h-6 w-6 mx-auto mb-2 text-warning" />
+                <p className="text-2xl font-bold">{data.recentCompanies}</p>
+                <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
