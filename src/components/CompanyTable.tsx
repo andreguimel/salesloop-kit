@@ -71,7 +71,7 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
     const pendingPhones = company.phones.filter(p => p.status === 'pending' && p.id);
     
     if (pendingPhones.length === 0) {
-      toast.info('Não há telefones pendentes para validar');
+      toast.info('Não há telefones pendentes para validar WhatsApp');
       return;
     }
 
@@ -82,14 +82,14 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
       const result = await validatePhones(phoneIds);
       
       toast.success(
-        `Validação concluída: ${result.summary.valid} válidos, ${result.summary.invalid} inválidos`,
+        `WhatsApp: ${result.summary.valid} com WhatsApp, ${result.summary.invalid} sem WhatsApp`,
         { description: `${result.summary.uncertain} incertos` }
       );
       
       onPhonesValidated?.();
     } catch (error) {
       console.error('Error validating phones:', error);
-      toast.error('Erro ao validar telefones', {
+      toast.error('Erro ao validar WhatsApp', {
         description: error instanceof Error ? error.message : 'Tente novamente'
       });
     } finally {
@@ -99,7 +99,7 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
 
   const handleValidateAllPhones = async () => {
     if (allPendingPhoneIds.length === 0) {
-      toast.info('Não há telefones pendentes para validar');
+      toast.info('Não há telefones pendentes para validar WhatsApp');
       return;
     }
 
@@ -109,16 +109,16 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
       const result = await validatePhones(allPendingPhoneIds);
       
       toast.success(
-        `Validação em lote concluída!`,
+        `Validação de WhatsApp concluída!`,
         { 
-          description: `${result.summary.valid} válidos, ${result.summary.invalid} inválidos, ${result.summary.uncertain} incertos` 
+          description: `${result.summary.valid} com WhatsApp, ${result.summary.invalid} sem WhatsApp, ${result.summary.uncertain} incertos` 
         }
       );
       
       onPhonesValidated?.();
     } catch (error) {
       console.error('Error validating all phones:', error);
-      toast.error('Erro ao validar telefones', {
+      toast.error('Erro ao validar WhatsApp', {
         description: error instanceof Error ? error.message : 'Tente novamente'
       });
     } finally {
@@ -374,14 +374,14 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
               {isValidatingAll ? (
                 <>
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  <span className="hidden sm:inline">Validando {allPendingPhoneIds.length}...</span>
+                  <span className="hidden sm:inline">Validando WhatsApp...</span>
                   <span className="sm:hidden">Validando...</span>
                 </>
               ) : (
                 <>
                   <CheckCircle className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Validar todos ({allPendingPhoneIds.length})</span>
-                  <span className="sm:hidden">Validar ({allPendingPhoneIds.length})</span>
+                  <span className="hidden sm:inline">Validar WhatsApp ({allPendingPhoneIds.length})</span>
+                  <span className="sm:hidden">WhatsApp ({allPendingPhoneIds.length})</span>
                 </>
               )}
             </Button>
