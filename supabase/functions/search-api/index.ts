@@ -16,7 +16,7 @@ serve(async (req) => {
       throw new Error('API key not configured');
     }
 
-    const { cnae, uf, cidade, limit = 50 } = await req.json();
+    const { cnae, uf, cidade, page = 1, limit = 50 } = await req.json();
 
     if (!cnae || cnae.trim().length < 2) {
       return new Response(
