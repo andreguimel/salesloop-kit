@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Building2, MapPin, Loader2, Plus, Check, Phone, Mail, Briefcase, Coins } from 'lucide-react';
+import { Search, Building2, MapPin, Loader2, Plus, Check, Phone, Mail, Briefcase, Coins, Lock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { searchCompaniesByCnae, importCompanyFromSearch, fetchMunicipios, fetchCnaes, SearchCompanyResult, Municipio, Cnae } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useCredits } from '@/hooks/useCredits';
+import { maskName, maskCnpj, maskPhone, maskEmail } from '@/lib/mask-utils';
 
 interface SearchByCnaeDialogProps {
   onCompaniesImported: () => void;
@@ -496,15 +497,16 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-medium truncate">
-                            {company.fantasyName || company.name}
+                            {maskName(company.fantasyName || company.name)}
                           </h4>
                           <Badge variant="outline" className="text-xs">
-                            {company.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')}
+                            {maskCnpj(company.cnpj)}
                           </Badge>
+                          <Lock className="h-3 w-3 text-muted-foreground" />
                         </div>
                         {company.fantasyName && (
                           <p className="text-sm text-muted-foreground truncate">
-                            {company.name}
+                            {maskName(company.name)}
                           </p>
                         )}
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
@@ -513,13 +515,13 @@ export function SearchByCnaeDialog({ onCompaniesImported }: SearchByCnaeDialogPr
                             {company.city}, {company.state}
                           </span>
                           {company.email && (
-                            <span className="truncate">{company.email}</span>
+                            <span className="truncate">{maskEmail(company.email)}</span>
                           )}
                         </div>
                         {company.phone1 && (
                           <p className="text-sm text-muted-foreground mt-1">
-                            Tel: {company.phone1}
-                            {company.phone2 && `, ${company.phone2}`}
+                            Tel: {maskPhone(company.phone1)}
+                            {company.phone2 && `, ${maskPhone(company.phone2)}`}
                           </p>
                         )}
                       </div>
