@@ -444,8 +444,8 @@ const Landing = () => {
                 {[
                   { icon: Clock, text: 'Economize 80% do tempo com prospecção manual' },
                   { icon: BarChart3, text: 'Aumente sua taxa de conversão com leads qualificados' },
-                  { icon: Users, text: 'Gerencie toda sua equipe em um só lugar' },
-                  { icon: MessageSquare, text: 'Integre com WhatsApp e e-mail marketing' },
+                  { icon: Target, text: 'Acompanhe seus leads com CRM integrado' },
+                  { icon: TrendingUp, text: 'Pipeline personalizado com histórico completo' },
                   { icon: Shield, text: 'Dados em conformidade com a LGPD' },
                 ].map((item, index) => (
                   <div key={index} className="flex items-center gap-4 p-4 rounded-xl glass hover-glow">
