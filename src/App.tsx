@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import SearchCompanies from "./pages/SearchCompanies";
+import CompanyDetails from "./pages/CompanyDetails";
 import History from "./pages/History";
 import Reports from "./pages/Reports";
 import Auth from "./pages/Auth";
@@ -35,6 +36,13 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <SearchCompanies />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/empresa/:id" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <CompanyDetails />
                 </AppLayout>
               </ProtectedRoute>
             } />

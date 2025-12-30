@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { MapPin, Building2, RefreshCw, CheckCircle, Phone, Trash2, Loader2, ChevronLeft, ChevronRight, Sparkles, Globe, Mail, Instagram, Facebook, Linkedin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, Building2, RefreshCw, CheckCircle, Phone, Trash2, Loader2, ChevronLeft, ChevronRight, Sparkles, Globe, Mail, Instagram, Facebook, Linkedin, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,6 +31,7 @@ interface CompanyTableProps {
 }
 
 export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, onCompanyEnriched }: CompanyTableProps) {
+  const navigate = useNavigate();
   const [validatingCompanyId, setValidatingCompanyId] = useState<string | null>(null);
   const [deletingCompanyId, setDeletingCompanyId] = useState<string | null>(null);
   const [enrichingCompanyId, setEnrichingCompanyId] = useState<string | null>(null);
@@ -395,7 +397,12 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
                   className="mt-1"
                 />
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-foreground truncate">{company.name}</h4>
+                  <h4 
+                    className="font-semibold text-foreground truncate hover:text-primary cursor-pointer transition-colors"
+                    onClick={() => navigate(`/empresa/${company.id}`)}
+                  >
+                    {company.name}
+                  </h4>
                   {company.cnpj && (
                     <code className="text-xs font-mono text-muted-foreground">
                       {formatCnpj(company.cnpj)}
@@ -586,7 +593,12 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
                   />
                 </td>
                 <td className="px-5 py-4">
-                  <div className="font-semibold text-foreground">{company.name}</div>
+                  <div 
+                    className="font-semibold text-foreground hover:text-primary cursor-pointer transition-colors"
+                    onClick={() => navigate(`/empresa/${company.id}`)}
+                  >
+                    {company.name}
+                  </div>
                   {company.cnae && (
                     <code className="text-xs font-mono px-1.5 py-0.5 rounded bg-secondary text-muted-foreground mt-1 inline-block">
                       CNAE: {company.cnae}
@@ -800,6 +812,15 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
                         )}
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/empresa/${company.id}`)}
+                      className="text-xs font-medium gap-1.5"
+                    >
+                      <Eye className="h-3 w-3" />
+                      Ver detalhes
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
