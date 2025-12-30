@@ -264,6 +264,24 @@ export async function createCompany(company: Omit<Company, 'id' | 'phones' | 'me
   return data;
 }
 
+export async function deleteCompany(companyId: string) {
+  // First delete all phones associated with the company
+  const { error: phonesError } = await supabase
+    .from('company_phones')
+    .delete()
+    .eq('company_id', companyId);
+
+  if (phonesError) throw phonesError;
+
+  // Then delete the company
+  const { error } = await supabase
+    .from('companies')
+    .delete()
+    .eq('id', companyId);
+
+  if (error) throw error;
+}
+
 export async function addPhoneToCompany(companyId: string, phoneNumber: string, phoneType: string, status: string) {
   const { data, error } = await supabase
     .from('company_phones')

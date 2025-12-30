@@ -1,18 +1,31 @@
 import { useState, useMemo } from 'react';
-import { MapPin, Building2, Smartphone, RefreshCw, CheckCircle, Phone } from 'lucide-react';
+import { MapPin, Building2, RefreshCw, CheckCircle, Phone, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PhoneStatusBadge } from './PhoneStatusBadge';
 import { Company } from '@/types';
-import { validatePhones } from '@/lib/api';
+import { validatePhones, deleteCompany } from '@/lib/api';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CompanyTableProps {
   companies: Company[];
   onPhonesValidated?: () => void;
+  onCompanyDeleted?: () => void;
 }
 
-export function CompanyTable({ companies, onPhonesValidated }: CompanyTableProps) {
+export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted }: CompanyTableProps) {
   const [validatingCompanyId, setValidatingCompanyId] = useState<string | null>(null);
+  const [deletingCompanyId, setDeletingCompanyId] = useState<string | null>(null);
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [isValidatingAll, setIsValidatingAll] = useState(false);
 
   // Get all pending phone IDs across all companies
@@ -78,6 +91,26 @@ export function CompanyTable({ companies, onPhonesValidated }: CompanyTableProps
       });
     } finally {
       setIsValidatingAll(false);
+    }
+  };
+
+  const handleDeleteCompany = async () => {
+    if (!companyToDelete) return;
+    
+    setDeletingCompanyId(companyToDelete.id);
+    
+    try {
+      await deleteCompany(companyToDelete.id);
+      toast.success('Empresa excluída com sucesso');
+      onCompanyDeleted?.();
+    } catch (error) {
+      console.error('Error deleting company:', error);
+      toast.error('Erro ao excluir empresa', {
+        description: error instanceof Error ? error.message : 'Tente novamente'
+      });
+    } finally {
+      setDeletingCompanyId(null);
+      setCompanyToDelete(null);
     }
   };
 
@@ -260,6 +293,20 @@ export function CompanyTable({ companies, onPhonesValidated }: CompanyTableProps
                         )}
                       </Button>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCompanyToDelete(company)}
+                      disabled={deletingCompanyId === company.id}
+                      className="text-xs font-medium gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      {deletingCompanyId === company.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3 w-3" />
+                      )}
+                      Excluir
+                    </Button>
                   </div>
                 </td>
               </tr>
@@ -267,6 +314,28 @@ export function CompanyTable({ companies, onPhonesValidated }: CompanyTableProps
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir empresa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a empresa <strong>{companyToDelete?.name}</strong>?
+              Esta ação não pode ser desfeita e todos os telefones associados também serão removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCompany}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
