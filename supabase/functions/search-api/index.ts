@@ -56,9 +56,18 @@ serve(async (req) => {
 
     const data = await response.json();
     
+    // Check if API returned an error message or empty response
+    if (data && data.mensagem) {
+      console.log('API returned message:', data.mensagem);
+      return new Response(
+        JSON.stringify([]),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // API doesn't respect limit param, so we slice manually
-    const companies = Array.isArray(data) ? data.slice(0, limit) : data;
-    console.log('API returned:', Array.isArray(data) ? data.length : 'object', 'total, returning:', limit);
+    const companies = Array.isArray(data) ? data.slice(0, limit) : [];
+    console.log('API returned:', Array.isArray(data) ? data.length : 'object', 'total, returning:', companies.length);
 
     return new Response(
       JSON.stringify(companies),
