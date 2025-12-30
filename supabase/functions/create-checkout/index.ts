@@ -68,28 +68,17 @@ serve(async (req) => {
     // Calculate total credits (base + bonus)
     const totalCredits = creditPackage.credits + creditPackage.bonus_credits;
     
-    // Get origin for return/completion URLs
-    const origin = req.headers.get('origin') || 'https://achei-leads.lovable.app';
-
-    // Create billing in AbacatePay
-    const abacateResponse = await fetch('https://api.abacatepay.com/v1/billing/create', {
+    // Create PIX QR Code directly using AbacatePay's pixQrCode endpoint
+    const abacateResponse = await fetch('https://api.abacatepay.com/v1/pixQrCode/create', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${abacateApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        frequency: 'ONE_TIME',
-        methods: ['PIX'],
-        products: [{
-          externalId: creditPackage.id,
-          name: `Pacote ${creditPackage.name} - ${totalCredits} créditos`,
-          description: `${creditPackage.credits} créditos${creditPackage.bonus_credits > 0 ? ` + ${creditPackage.bonus_credits} bônus` : ''}`,
-          quantity: 1,
-          price: Math.round(creditPackage.price_brl * 100), // Convert to cents
-        }],
-        returnUrl: `${origin}/creditos?status=pending`,
-        completionUrl: `${origin}/creditos?status=success`,
+        amount: Math.round(creditPackage.price_brl * 100), // Convert to cents
+        expiresIn: 3600, // 1 hour expiration
+        description: `Pacote ${creditPackage.name} - ${totalCredits} créditos`,
         customer: {
           email: customerEmail,
           name: customerName,
@@ -101,6 +90,7 @@ serve(async (req) => {
           packageId: creditPackage.id,
           credits: creditPackage.credits,
           bonusCredits: creditPackage.bonus_credits,
+          externalId: `${user.id}_${creditPackage.id}_${Date.now()}`,
         },
       }),
     });
@@ -112,17 +102,22 @@ serve(async (req) => {
     }
 
     const abacateData = await abacateResponse.json();
-    console.log('AbacatePay billing created:', abacateData);
+    console.log('AbacatePay PIX QR Code created:', abacateData);
 
-    if (!abacateData.data?.url) {
-      throw new Error('URL de pagamento não retornada');
+    if (!abacateData.data?.brCode) {
+      throw new Error('QR Code não retornado');
     }
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        url: abacateData.data.url,
-        billingId: abacateData.data.id,
+        pixId: abacateData.data.id,
+        brCode: abacateData.data.brCode,
+        brCodeBase64: abacateData.data.brCodeBase64,
+        amount: creditPackage.price_brl,
+        expiresAt: abacateData.data.expiresAt,
+        packageName: creditPackage.name,
+        totalCredits: totalCredits,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

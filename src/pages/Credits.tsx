@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Coins, Gift, Star, Zap, Building2, Check, ArrowRight, Clock, TrendingUp } from "lucide-react";
+import { Coins, Gift, Star, Zap, Building2, Check, ArrowRight, Clock, TrendingUp, Copy, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const packageIcons: Record<string, typeof Zap> = {
   Starter: Zap,
@@ -38,6 +45,16 @@ const packageColors: Record<string, string> = {
   Agency: "from-orange-500 to-orange-600",
 };
 
+interface PixData {
+  pixId: string;
+  brCode: string;
+  brCodeBase64: string;
+  amount: number;
+  expiresAt: string;
+  packageName: string;
+  totalCredits: number;
+}
+
 export default function Credits() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -52,6 +69,9 @@ export default function Credits() {
     isCritical,
   } = useCredits();
   const [loadingPackage, setLoadingPackage] = useState<string | null>(null);
+  const [pixDialogOpen, setPixDialogOpen] = useState(false);
+  const [pixData, setPixData] = useState<PixData | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const status = searchParams.get("status");
@@ -72,8 +92,17 @@ export default function Credits() {
     setLoadingPackage(packageId);
     try {
       const result = await createCheckout(packageId);
-      if (result.success && result.url) {
-        window.location.href = result.url;
+      if (result.success && result.brCode && result.brCodeBase64) {
+        setPixData({
+          pixId: result.pixId!,
+          brCode: result.brCode,
+          brCodeBase64: result.brCodeBase64,
+          amount: result.amount!,
+          expiresAt: result.expiresAt!,
+          packageName: result.packageName!,
+          totalCredits: result.totalCredits!,
+        });
+        setPixDialogOpen(true);
       } else {
         toast.error(result.error || "Erro ao criar checkout");
       }
@@ -81,6 +110,19 @@ export default function Credits() {
       toast.error("Erro ao processar compra");
     } finally {
       setLoadingPackage(null);
+    }
+  };
+
+  const handleCopyBrCode = async () => {
+    if (!pixData?.brCode) return;
+    
+    try {
+      await navigator.clipboard.writeText(pixData.brCode);
+      setCopied(true);
+      toast.success("Código PIX copiado!");
+      setTimeout(() => setCopied(false), 3000);
+    } catch (error) {
+      toast.error("Erro ao copiar código");
     }
   };
 
@@ -353,6 +395,81 @@ export default function Credits() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* PIX QR Code Dialog */}
+      <Dialog open={pixDialogOpen} onOpenChange={setPixDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-primary" />
+              Pagamento PIX
+            </DialogTitle>
+            <DialogDescription>
+              Escaneie o QR Code ou copie o código PIX para pagar
+            </DialogDescription>
+          </DialogHeader>
+          
+          {pixData && (
+            <div className="space-y-4">
+              {/* Package Info */}
+              <div className="rounded-lg bg-muted/50 p-4 text-center">
+                <p className="text-sm text-muted-foreground">Pacote {pixData.packageName}</p>
+                <p className="text-2xl font-bold">R$ {pixData.amount.toFixed(2)}</p>
+                <p className="text-sm text-primary">{pixData.totalCredits} créditos</p>
+              </div>
+
+              {/* QR Code */}
+              <div className="flex justify-center">
+                <div className="rounded-lg bg-white p-4">
+                  <img 
+                    src={pixData.brCodeBase64} 
+                    alt="QR Code PIX" 
+                    className="h-48 w-48"
+                  />
+                </div>
+              </div>
+
+              {/* Copy Code Button */}
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={handleCopyBrCode}
+                >
+                  {copied ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2 text-emerald-500" />
+                      Código copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar código PIX
+                    </>
+                  )}
+                </Button>
+                
+                {/* Expiration Info */}
+                <p className="text-xs text-center text-muted-foreground">
+                  <Clock className="h-3 w-3 inline mr-1" />
+                  O código expira em 1 hora
+                </p>
+              </div>
+
+              {/* Instructions */}
+              <div className="rounded-lg border p-4 space-y-2">
+                <p className="text-sm font-medium">Como pagar:</p>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Abra o app do seu banco</li>
+                  <li>Escaneie o QR Code ou cole o código PIX</li>
+                  <li>Confirme o pagamento</li>
+                  <li>Seus créditos serão adicionados automaticamente!</li>
+                </ol>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
