@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, Loader2, Building2, Phone, MapPin, Plus, Check } from 'lucide-react';
+import { Search, Loader2, Building2, Phone, MapPin, Plus, Check, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { fetchCnaes, Cnae } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 interface SearchResult {
   cnpj?: string;
@@ -33,6 +37,10 @@ const UF_LIST = [
 export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   const [open, setOpen] = useState(false);
   const [cnae, setCnae] = useState('');
+  const [cnaeSearchTerm, setCnaeSearchTerm] = useState('');
+  const [cnaePopoverOpen, setCnaePopoverOpen] = useState(false);
+  const [cnaes, setCnaes] = useState<Cnae[]>([]);
+  const [isLoadingCnaes, setIsLoadingCnaes] = useState(false);
   const [uf, setUf] = useState('');
   const [cidade, setCidade] = useState('');
   const [onlyWithPhone, setOnlyWithPhone] = useState(false);
@@ -46,6 +54,44 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   const { toast } = useToast();
 
   const ITEMS_PER_PAGE = 50;
+
+  // Load CNAEs when dialog opens
+  useEffect(() => {
+    if (open && cnaes.length === 0) {
+      loadCnaes();
+    }
+  }, [open]);
+
+  const loadCnaes = async () => {
+    setIsLoadingCnaes(true);
+    try {
+      const data = await fetchCnaes();
+      setCnaes(data);
+    } catch (error) {
+      console.error('Error loading CNAEs:', error);
+      toast({
+        title: 'Erro ao carregar CNAEs',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingCnaes(false);
+    }
+  };
+
+  // Filter CNAEs based on search term
+  const filteredCnaes = useMemo(() => {
+    if (!cnaeSearchTerm) return cnaes.slice(0, 100); // Show first 100 if no search
+    const term = cnaeSearchTerm.toLowerCase();
+    return cnaes.filter(c => 
+      c.id.includes(term) || c.descricao.toLowerCase().includes(term)
+    ).slice(0, 100);
+  }, [cnaes, cnaeSearchTerm]);
+
+  // Get selected CNAE description
+  const selectedCnae = useMemo(() => {
+    return cnaes.find(c => c.id === cnae);
+  }, [cnaes, cnae]);
+
 
   const applyFilters = (companies: SearchResult[]) => {
     let filtered = companies;
@@ -61,9 +107,9 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   };
 
   const handleSearch = async () => {
-    if (!cnae.trim() || cnae.length < 2) {
+    if (!cnae.trim()) {
       toast({
-        title: 'Digite ao menos 2 caracteres do CNAE',
+        title: 'Selecione uma atividade (CNAE)',
         variant: 'destructive',
       });
       return;
@@ -246,6 +292,8 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   const handleClose = () => {
     setOpen(false);
     setCnae('');
+    setCnaeSearchTerm('');
+    setCnaePopoverOpen(false);
     setUf('');
     setCidade('');
     setOnlyWithPhone(false);
@@ -274,40 +322,101 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
           {/* Search Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label>CNAE</Label>
-              <Input
-                placeholder="Ex: 4711302, 5611201..."
-                value={cnae}
-                onChange={(e) => setCnae(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
+              <Label>CNAE - Atividade</Label>
+              <Popover open={cnaePopoverOpen} onOpenChange={setCnaePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={cnaePopoverOpen}
+                    className="w-full justify-between font-normal h-auto min-h-10"
+                  >
+                    {selectedCnae ? (
+                      <span className="truncate text-left">
+                        <span className="font-medium">{selectedCnae.id}</span> - {selectedCnae.descricao}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Selecione uma atividade...</span>
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[500px] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput 
+                      placeholder="Buscar por código ou descrição..." 
+                      value={cnaeSearchTerm}
+                      onValueChange={setCnaeSearchTerm}
+                    />
+                    <CommandList>
+                      {isLoadingCnaes ? (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="ml-2 text-sm text-muted-foreground">Carregando...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <CommandEmpty>Nenhuma atividade encontrada.</CommandEmpty>
+                          <CommandGroup className="max-h-[300px] overflow-auto">
+                            {filteredCnaes.map((c) => (
+                              <CommandItem
+                                key={c.id}
+                                value={c.id}
+                                onSelect={() => {
+                                  setCnae(c.id);
+                                  setCnaePopoverOpen(false);
+                                  setCnaeSearchTerm('');
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    cnae === c.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{c.id}</span>
+                                  <span className="text-xs text-muted-foreground line-clamp-2">{c.descricao}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             
-            <div className="space-y-2">
-              <Label>UF</Label>
-              <Select value={uf || "all"} onValueChange={(val) => setUf(val === "all" ? "" : val)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {UF_LIST.map((state) => (
-                    <SelectItem key={state} value={state}>{state}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Cidade</Label>
-              <Input
-                placeholder="Nome da cidade..."
-                value={cidade}
-                onChange={(e) => setCidade(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>UF</Label>
+                <Select value={uf || "all"} onValueChange={(val) => setUf(val === "all" ? "" : val)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {UF_LIST.map((state) => (
+                      <SelectItem key={state} value={state}>{state}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Cidade</Label>
+                <Input
+                  placeholder="Nome da cidade..."
+                  value={cidade}
+                  onChange={(e) => setCidade(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
             </div>
           </div>
 
