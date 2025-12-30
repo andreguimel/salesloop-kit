@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
@@ -20,67 +21,69 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/buscar" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <SearchCompanies />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/empresa/:id" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <CompanyDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/historico" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <History />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/relatorios" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Reports />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/crm" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <CRM />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/configuracoes" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Settings />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Dashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/buscar" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <SearchCompanies />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/empresa/:id" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CompanyDetails />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/historico" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <History />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/relatorios" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Reports />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/crm" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CRM />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/configuracoes" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Settings />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
