@@ -1,43 +1,43 @@
 project_id = "znuwvgspjvsifnwizynd"
 
 [functions.search-companies]
-verify_jwt = false
+verify_jwt = true
 
 [functions.search-by-cnae]
-verify_jwt = false
+verify_jwt = true
 
 [functions.lista-cnae-municipios]
-verify_jwt = false
+verify_jwt = true
 
 [functions.lista-cnae-cnaes]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-cnpjws-account]
-verify_jwt = false
+verify_jwt = true
 
 [functions.test-cnpjws-premium]
-verify_jwt = false
+verify_jwt = true
 
 [functions.search-google-maps]
-verify_jwt = false
+verify_jwt = true
 
 [functions.search-by-cep]
-verify_jwt = false
+verify_jwt = true
 
 [functions.search-cnpja]
-verify_jwt = false
+verify_jwt = true
 
 [functions.enrich-company]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-checkout]
-verify_jwt = false
+verify_jwt = true
 
 [functions.abacatepay-webhook]
 verify_jwt = false
 
 [functions.search-api]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-pix-status]
-verify_jwt = false
+verify_jwt = true
