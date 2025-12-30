@@ -99,14 +99,14 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             Cidade
           </Label>
           <Select
-            value={filters.city}
-            onValueChange={(value) => setFilters({ ...filters, city: value })}
+            value={filters.city || '_all'}
+            onValueChange={(value) => setFilters({ ...filters, city: value === '_all' ? '' : value })}
           >
             <SelectTrigger className="h-10 md:h-11 bg-secondary/50 border-border/50">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem value="">Todas</SelectItem>
+              <SelectItem value="_all">Todas</SelectItem>
               {cities.map((city) => (
                 <SelectItem key={city} value={city}>
                   {city}
@@ -121,14 +121,14 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             Segmento
           </Label>
           <Select
-            value={filters.segment}
-            onValueChange={(value) => setFilters({ ...filters, segment: value })}
+            value={filters.segment || '_all'}
+            onValueChange={(value) => setFilters({ ...filters, segment: value === '_all' ? '' : value })}
           >
             <SelectTrigger className="h-10 md:h-11 bg-secondary/50 border-border/50">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="_all">Todos</SelectItem>
               {segments.map((segment) => (
                 <SelectItem key={segment} value={segment}>
                   {segment}
@@ -169,14 +169,14 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             Estágio CRM
           </Label>
           <Select
-            value={filters.crmStageId}
-            onValueChange={(value) => setFilters({ ...filters, crmStageId: value })}
+            value={filters.crmStageId || '_all'}
+            onValueChange={(value) => setFilters({ ...filters, crmStageId: value === '_all' ? '' : value })}
           >
             <SelectTrigger className="h-10 md:h-11 bg-secondary/50 border-border/50">
               <SelectValue placeholder="Todos os estágios" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem value="">Todos os estágios</SelectItem>
+              <SelectItem value="_all">Todos os estágios</SelectItem>
               <SelectItem value="none">Sem estágio</SelectItem>
               {stages.map((stage) => (
                 <SelectItem key={stage.id} value={stage.id}>
