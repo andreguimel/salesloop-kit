@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Coins, Gift, Star, Zap, Building2, Check, ArrowRight, Clock, TrendingUp, Copy, CheckCircle } from "lucide-react";
+import { Coins, Gift, Star, Zap, Building2, Check, ArrowRight, Clock, TrendingUp, Copy, CheckCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
@@ -64,6 +65,7 @@ export default function Credits() {
     packages, 
     transactions, 
     fetchTransactions, 
+    fetchBalance,
     createCheckout,
     isLow,
     isCritical,
@@ -72,6 +74,94 @@ export default function Credits() {
   const [pixDialogOpen, setPixDialogOpen] = useState(false);
   const [pixData, setPixData] = useState<PixData | null>(null);
   const [copied, setCopied] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check PIX payment status
+  const checkPixStatus = useCallback(async (pixId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-pix-status', {
+        body: { pixId },
+      });
+
+      if (error) {
+        console.error('Error checking PIX status:', error);
+        return false;
+      }
+
+      return data?.isPaid === true;
+    } catch (error) {
+      console.error('Error checking PIX status:', error);
+      return false;
+    }
+  }, []);
+
+  // Start polling for payment status
+  const startPolling = useCallback((pixId: string) => {
+    setCheckingPayment(true);
+    
+    // Clear any existing interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    // Poll every 3 seconds
+    pollingIntervalRef.current = setInterval(async () => {
+      console.log('Checking payment status...');
+      const isPaid = await checkPixStatus(pixId);
+      
+      if (isPaid) {
+        console.log('Payment confirmed!');
+        setPaymentConfirmed(true);
+        setCheckingPayment(false);
+        
+        // Clear the interval
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        
+        // Show success toast
+        toast.success("Pagamento confirmado! Seus créditos foram adicionados.");
+        
+        // Refresh balance and transactions
+        fetchBalance();
+        fetchTransactions();
+        
+        // Close modal after a short delay
+        setTimeout(() => {
+          setPixDialogOpen(false);
+          setPaymentConfirmed(false);
+          setPixData(null);
+        }, 2000);
+      }
+    }, 3000);
+  }, [checkPixStatus, fetchBalance, fetchTransactions]);
+
+  // Cleanup polling on unmount or modal close
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Start polling when dialog opens with pix data
+  useEffect(() => {
+    if (pixDialogOpen && pixData?.pixId && !paymentConfirmed) {
+      startPolling(pixData.pixId);
+    } else if (!pixDialogOpen) {
+      // Stop polling when dialog closes
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      setCheckingPayment(false);
+      setPaymentConfirmed(false);
+    }
+  }, [pixDialogOpen, pixData?.pixId, paymentConfirmed, startPolling]);
 
   useEffect(() => {
     const status = searchParams.get("status");
@@ -397,75 +487,114 @@ export default function Credits() {
       </Tabs>
 
       {/* PIX QR Code Dialog */}
-      <Dialog open={pixDialogOpen} onOpenChange={setPixDialogOpen}>
+      <Dialog open={pixDialogOpen} onOpenChange={(open) => {
+        if (!open && !paymentConfirmed) {
+          setPixDialogOpen(false);
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Coins className="h-5 w-5 text-primary" />
-              Pagamento PIX
+              {paymentConfirmed ? (
+                <CheckCircle className="h-5 w-5 text-emerald-500" />
+              ) : (
+                <Coins className="h-5 w-5 text-primary" />
+              )}
+              {paymentConfirmed ? "Pagamento Confirmado!" : "Pagamento PIX"}
             </DialogTitle>
             <DialogDescription>
-              Escaneie o QR Code ou copie o código PIX para pagar
+              {paymentConfirmed 
+                ? "Seus créditos foram adicionados com sucesso" 
+                : "Escaneie o QR Code ou copie o código PIX para pagar"}
             </DialogDescription>
           </DialogHeader>
           
           {pixData && (
             <div className="space-y-4">
-              {/* Package Info */}
-              <div className="rounded-lg bg-muted/50 p-4 text-center">
-                <p className="text-sm text-muted-foreground">Pacote {pixData.packageName}</p>
-                <p className="text-2xl font-bold">R$ {pixData.amount.toFixed(2)}</p>
-                <p className="text-sm text-primary">{pixData.totalCredits} créditos</p>
-              </div>
-
-              {/* QR Code */}
-              <div className="flex justify-center">
-                <div className="rounded-lg bg-white p-4">
-                  <img 
-                    src={pixData.brCodeBase64} 
-                    alt="QR Code PIX" 
-                    className="h-48 w-48"
-                  />
+              {/* Payment Confirmed State */}
+              {paymentConfirmed ? (
+                <div className="flex flex-col items-center gap-4 py-8">
+                  <div className="rounded-full bg-emerald-500/20 p-6">
+                    <CheckCircle className="h-16 w-16 text-emerald-500" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-semibold">Pagamento confirmado!</p>
+                    <p className="text-muted-foreground">
+                      +{pixData.totalCredits} créditos adicionados
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Package Info */}
+                  <div className="rounded-lg bg-muted/50 p-4 text-center">
+                    <p className="text-sm text-muted-foreground">Pacote {pixData.packageName}</p>
+                    <p className="text-2xl font-bold">R$ {pixData.amount.toFixed(2)}</p>
+                    <p className="text-sm text-primary">{pixData.totalCredits} créditos</p>
+                  </div>
 
-              {/* Copy Code Button */}
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={handleCopyBrCode}
-                >
-                  {copied ? (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2 text-emerald-500" />
-                      Código copiado!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copiar código PIX
-                    </>
-                  )}
-                </Button>
-                
-                {/* Expiration Info */}
-                <p className="text-xs text-center text-muted-foreground">
-                  <Clock className="h-3 w-3 inline mr-1" />
-                  O código expira em 1 hora
-                </p>
-              </div>
+                  {/* QR Code */}
+                  <div className="flex justify-center">
+                    <div className="rounded-lg bg-white p-4">
+                      <img 
+                        src={pixData.brCodeBase64} 
+                        alt="QR Code PIX" 
+                        className="h-48 w-48"
+                      />
+                    </div>
+                  </div>
 
-              {/* Instructions */}
-              <div className="rounded-lg border p-4 space-y-2">
-                <p className="text-sm font-medium">Como pagar:</p>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Abra o app do seu banco</li>
-                  <li>Escaneie o QR Code ou cole o código PIX</li>
-                  <li>Confirme o pagamento</li>
-                  <li>Seus créditos serão adicionados automaticamente!</li>
-                </ol>
-              </div>
+                  {/* Copy Code Button */}
+                  <div className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={handleCopyBrCode}
+                    >
+                      {copied ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2 text-emerald-500" />
+                          Código copiado!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copiar código PIX
+                        </>
+                      )}
+                    </Button>
+                    
+                    {/* Status Indicator */}
+                    <div className="flex items-center justify-center gap-2 py-2">
+                      {checkingPayment && (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">
+                            Aguardando pagamento...
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Expiration Info */}
+                    <p className="text-xs text-center text-muted-foreground">
+                      <Clock className="h-3 w-3 inline mr-1" />
+                      O código expira em 1 hora
+                    </p>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="rounded-lg border p-4 space-y-2">
+                    <p className="text-sm font-medium">Como pagar:</p>
+                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                      <li>Abra o app do seu banco</li>
+                      <li>Escaneie o QR Code ou cole o código PIX</li>
+                      <li>Confirme o pagamento</li>
+                      <li>Seus créditos serão adicionados automaticamente!</li>
+                    </ol>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </DialogContent>
