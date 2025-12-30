@@ -1,10 +1,11 @@
-import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings } from "lucide-react";
+import { LayoutDashboard, Search, History, FileBarChart, LogOut, Target, AlertCircle, Settings, Moon, Sun } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOverdueTasks } from "@/hooks/useOverdueTasks";
+import { useTheme } from "next-themes";
 
 import {
   Sidebar,
@@ -35,8 +36,10 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const { signOut, user } = useAuth();
   const { count: overdueCount } = useOverdueTasks();
+  const { theme, setTheme } = useTheme();
 
   const isActive = (path: string) => currentPath === path;
+  const isDark = theme === "dark";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar text-sidebar-foreground">
@@ -104,9 +107,20 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4 bg-sidebar">
+      <SidebarFooter className="border-t border-sidebar-border p-4 bg-sidebar space-y-2">
+        {/* Theme Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+        >
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {!collapsed && <span>{isDark ? "Tema Claro" : "Tema Escuro"}</span>}
+        </Button>
+
         {!collapsed && user && (
-          <div className="mb-3 px-2">
+          <div className="px-2">
             <p className="text-xs text-sidebar-foreground/60 truncate">{user.email}</p>
           </div>
         )}
