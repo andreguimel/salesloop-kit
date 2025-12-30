@@ -263,8 +263,22 @@ const CompanyDetails = () => {
         </Button>
         
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{company.name}</h1>
+        <div className="space-y-2">
+            {/* Parse name to show Razão Social and Nome Fantasia separately */}
+            {company.name.includes(' | ') ? (
+              <>
+                <div>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Razão Social</span>
+                  <h1 className="text-xl md:text-2xl font-bold tracking-tight">{company.name.split(' | ')[0]}</h1>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Nome Fantasia</span>
+                  <h2 className="text-lg md:text-xl font-semibold text-primary">{company.name.split(' | ')[1]}</h2>
+                </div>
+              </>
+            ) : (
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{company.name}</h1>
+            )}
             {company.cnpj && (
               <code className="text-sm font-mono text-muted-foreground">
                 CNPJ: {formatCnpj(company.cnpj)}
