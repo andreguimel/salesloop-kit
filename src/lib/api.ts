@@ -534,6 +534,8 @@ export async function importCompanyFromSearch(searchResult: SearchCompanyResult)
 // Enrich company with AI (Firecrawl + Lovable AI)
 export interface EnrichmentResult {
   name?: string;
+  razaoSocial?: string;
+  nomeFantasia?: string;
   website?: string;
   email?: string;
   instagram?: string;
