@@ -39,3 +39,28 @@ export function maskEmail(email: string): string {
   const localPart = parts[0].slice(0, 2) + '*'.repeat(Math.max(3, parts[0].length - 2));
   return localPart + '@*****.***';
 }
+
+export function maskAddress(address: string): string {
+  if (!address) return '';
+  const words = address.split(' ');
+  return words.map((word, index) => {
+    // Keep first word (usually RUA, AVENIDA, etc) and show partial of others
+    if (index === 0) {
+      return word;
+    }
+    if (word.length <= 2) {
+      return word; // Keep short words like "DE", "DO"
+    }
+    // Show first 2-3 chars and mask the rest
+    const visibleChars = Math.min(2, word.length);
+    return word.slice(0, visibleChars) + '*'.repeat(Math.max(0, word.length - visibleChars));
+  }).join(' ');
+}
+
+export function maskCep(cep: string): string {
+  if (!cep) return '';
+  const digits = cep.replace(/\D/g, '');
+  if (digits.length < 5) return cep;
+  // Show first 3 digits only
+  return digits.slice(0, 3) + '*****';
+}

@@ -14,6 +14,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { searchCompanyByCnpj, importCompanyFromSearch, SearchCompanyResult } from '@/lib/api';
 import { useCredits } from '@/hooks/useCredits';
+import { maskAddress, maskCep } from '@/lib/mask-utils';
 
 interface SearchByCnpjDialogProps {
   open: boolean;
@@ -297,7 +298,7 @@ export function SearchByCnpjDialog({ open, onOpenChange, onCompanyImported }: Se
               {result.address && (
                 <div className="col-span-2 text-muted-foreground">
                   <span className="text-xs">
-                    {result.address}, {result.number} - {result.neighborhood}, {result.cep}
+                    {maskAddress(result.address)}, {result.number?.slice(0, 2)}** - {maskAddress(result.neighborhood)}, {maskCep(result.cep)}
                   </span>
                 </div>
               )}

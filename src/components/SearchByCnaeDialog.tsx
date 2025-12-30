@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { searchCompaniesByCnae, importCompanyFromSearch, fetchMunicipios, fetchCnaes, SearchCompanyResult, Municipio, Cnae } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useCredits } from '@/hooks/useCredits';
-import { maskName, maskCnpj, maskPhone, maskEmail } from '@/lib/mask-utils';
+import { maskName, maskCnpj, maskPhone, maskEmail, maskAddress, maskCep } from '@/lib/mask-utils';
 
 interface SearchByCnaeDialogProps {
   onCompaniesImported: () => void;

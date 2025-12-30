@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Search, Phone, Globe, Star, Download, Loader2, Building2, Coins } from 'lucide-react';
+import { MapPin, Search, Phone, Globe, Star, Download, Loader2, Building2, Coins, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { searchGoogleMaps, importCompanyFromGoogleMaps, GoogleMapsCompany } from '@/lib/api';
 import { useCredits } from '@/hooks/useCredits';
+import { maskAddress, maskPhone as maskPhoneUtil } from '@/lib/mask-utils';
 
 interface SearchGoogleMapsDialogProps {
   onCompaniesImported: () => void;
@@ -278,13 +279,14 @@ export function SearchGoogleMapsDialog({ onCompaniesImported }: SearchGoogleMaps
                             {displayPhone && (
                               <div className="flex items-center gap-2">
                                 <Phone className="h-3 w-3 shrink-0" />
-                                <span>{displayPhone}</span>
+                                <span>{maskPhoneUtil(displayPhone)}</span>
+                                <Lock className="h-3 w-3 text-muted-foreground" />
                               </div>
                             )}
                             {validAddress && (
                               <div className="flex items-center gap-2">
                                 <MapPin className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{company.address}</span>
+                                <span className="truncate">{maskAddress(company.address)}</span>
                               </div>
                             )}
                             {company.website && (
