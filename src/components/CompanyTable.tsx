@@ -453,7 +453,7 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
                   <div key={phone.number} className="flex items-center gap-2">
                     <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="text-sm font-mono">{formatPhone(phone.number)}</span>
-                    <PhoneStatusBadge phone={phone} />
+                    <PhoneStatusBadge phone={phone} showNumber={false} />
                   </div>
                 ))
               ) : (
@@ -636,7 +636,7 @@ export function CompanyTable({ companies, onPhonesValidated, onCompanyDeleted, o
                           <div className="flex items-center gap-2">
                             <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-sm font-mono">{formatPhone(phone.number)}</span>
-                            <PhoneStatusBadge phone={phone} />
+                            <PhoneStatusBadge phone={phone} showNumber={false} />
                           </div>
                         </div>
                       ))
