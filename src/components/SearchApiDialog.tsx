@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, Loader2, Building2, Phone, MapPin, Plus, Check, ChevronsUpDown } from 'lucide-react';
+import { Search, Loader2, Building2, Phone, MapPin, Plus, Check, ChevronsUpDown, Coins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { fetchCnaes, Cnae } from '@/lib/api';
 import { cn } from '@/lib/utils';
-
+import { useCredits } from '@/hooks/useCredits';
 interface SearchResult {
   cnpj?: string;
   nome?: string;
@@ -52,6 +52,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const { toast } = useToast();
+  const { balance, consumeCredits, hasCredits } = useCredits();
 
   const ITEMS_PER_PAGE = 50;
 
@@ -211,6 +212,17 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
       return;
     }
 
+    // Check credits
+    const requiredCredits = toImport.length;
+    if (balance < requiredCredits) {
+      toast({ 
+        title: 'Créditos insuficientes', 
+        description: `Você precisa de ${requiredCredits} crédito(s) para importar. Saldo: ${balance}`,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     setIsImporting(true);
 
     try {
@@ -220,6 +232,17 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
       let importedCount = 0;
 
       for (const company of toImport) {
+        // Consume 1 credit per company
+        const success = await consumeCredits(1, `Importação: ${company.nome || 'Empresa'}`);
+        if (!success) {
+          toast({ 
+            title: 'Créditos esgotados', 
+            description: `Importadas ${importedCount} empresa(s). Compre mais créditos para continuar.`,
+            variant: 'destructive' 
+          });
+          break;
+        }
+
         const companyName = company.nome || 'Empresa';
         
         // Extract city/state from endereco if possible, or use search params
@@ -272,7 +295,7 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
 
       toast({
         title: 'Importação concluída!',
-        description: `${importedCount} empresa(s) importada(s) com sucesso.`,
+        description: `${importedCount} empresa(s) importada(s). ${importedCount} crédito(s) consumido(s).`,
       });
 
       setOpen(false);
@@ -460,22 +483,27 @@ export function SearchApiDialog({ onCompaniesImported }: SearchApiDialogProps) {
                     {selectedResults.size === results.length ? 'Desmarcar todos' : 'Selecionar todos'}
                   </Button>
                   {selectedResults.size > 0 && (
-                    <Button 
-                      size="sm" 
-                      onClick={handleImport} 
-                      disabled={isImporting}
-                      className="gap-2"
-                    >
-                      {isImporting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Plus className="h-4 w-4" />
-                      )}
-                      Importar ({selectedResults.size})
-                    </Button>
-                  )}
-                </div>
+                  <Button 
+                    size="sm" 
+                    onClick={handleImport} 
+                    disabled={isImporting || balance < selectedResults.size}
+                    className="gap-2"
+                    title={balance < selectedResults.size ? `Saldo insuficiente. Necessário: ${selectedResults.size}, Disponível: ${balance}` : ''}
+                  >
+                    {isImporting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                    Importar ({selectedResults.size})
+                  </Button>
+                )}
               </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Coins className="h-3 w-3" />
+                <span>Custo: {selectedResults.size} crédito(s) | Saldo: {balance}</span>
+              </div>
+            </div>
 
               <div className="border rounded-lg max-h-[350px] overflow-y-auto">
                 <div className="space-y-1 p-2">

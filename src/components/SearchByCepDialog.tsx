@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Building2, MapPin, Phone, Mail, Loader2, Download, CheckCircle } from 'lucide-react';
+import { Search, Building2, MapPin, Phone, Mail, Loader2, Download, CheckCircle, Coins } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { importCompanyFromSearch, SearchCompanyResult } from '@/lib/api';
+import { useCredits } from '@/hooks/useCredits';
 
 interface SearchByCepDialogProps {
   open: boolean;
@@ -65,6 +66,7 @@ export function SearchByCepDialog({ open, onOpenChange, onCompanyImported }: Sea
   const [results, setResults] = useState<CepCompany[]>([]);
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
   const [importedIds, setImportedIds] = useState<Set<string>>(new Set());
+  const { balance, consumeCredits } = useCredits();
 
   const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCep(formatCep(e.target.value));
@@ -107,9 +109,22 @@ export function SearchByCepDialog({ open, onOpenChange, onCompanyImported }: Sea
   };
 
   const handleImport = async (company: CepCompany) => {
+    // Check credits
+    if (balance < 1) {
+      toast.error('Créditos insuficientes. Compre mais créditos.');
+      return;
+    }
+
     setImportingIds(prev => new Set(prev).add(company.cnpj));
 
     try {
+      // Consume 1 credit
+      const success = await consumeCredits(1, `Importação: ${company.fantasyName || company.name}`);
+      if (!success) {
+        toast.error('Erro ao consumir crédito');
+        return;
+      }
+
       const searchResult: SearchCompanyResult = {
         cnpj: company.cnpj,
         name: company.name,
@@ -129,7 +144,7 @@ export function SearchByCepDialog({ open, onOpenChange, onCompanyImported }: Sea
 
       await importCompanyFromSearch(searchResult);
       setImportedIds(prev => new Set(prev).add(company.cnpj));
-      toast.success('Empresa importada com sucesso!');
+      toast.success('Empresa importada! 1 crédito consumido.');
       onCompanyImported();
     } catch (error) {
       console.error('Error importing company:', error);
@@ -146,11 +161,19 @@ export function SearchByCepDialog({ open, onOpenChange, onCompanyImported }: Sea
   const handleImportAll = async () => {
     const toImport = results.filter(c => !importedIds.has(c.cnpj));
     
-    for (const company of toImport) {
-      await handleImport(company);
+    if (balance < toImport.length) {
+      toast.error(`Créditos insuficientes. Necessário: ${toImport.length}, Saldo: ${balance}`);
+      return;
     }
     
-    toast.success(`${toImport.length} empresa(s) importada(s)`);
+    let imported = 0;
+    for (const company of toImport) {
+      if (balance < 1) break;
+      await handleImport(company);
+      imported++;
+    }
+    
+    toast.success(`${imported} empresa(s) importada(s). ${imported} crédito(s) consumido(s).`);
   };
 
   const handleClose = () => {
@@ -207,15 +230,22 @@ export function SearchByCepDialog({ open, onOpenChange, onCompanyImported }: Sea
           {results.length > 0 && (
             <div className="flex-1 overflow-hidden flex flex-col">
               <div className="flex items-center justify-between mb-3">
-                <Badge variant="secondary">
-                  {results.length} empresa(s) encontrada(s)
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    {results.length} empresa(s) encontrada(s)
+                  </Badge>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Coins className="h-3 w-3" />
+                    Saldo: {balance}
+                  </span>
+                </div>
                 {results.some(c => !importedIds.has(c.cnpj)) && (
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={handleImportAll}
                     className="gap-2"
+                    disabled={balance < results.filter(c => !importedIds.has(c.cnpj)).length}
                   >
                     <Download className="h-4 w-4" />
                     Importar Todas
