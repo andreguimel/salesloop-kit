@@ -67,18 +67,22 @@ serve(async (req) => {
     const cleanCnpj = company.cnpj?.replace(/\D/g, '') || '';
     const hasCnpj = cleanCnpj.length === 14;
 
-    // Step 1: Primary search - prioritize CNPJ if available
+    // Step 1: Primary search - prioritize CNPJ if available, but also search by name
     let primarySearchQuery: string;
+    let secondaryNameSearch = '';
+    
     if (hasCnpj) {
       // Format CNPJ for better search results: XX.XXX.XXX/XXXX-XX
       const formattedCnpj = cleanCnpj.replace(
         /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
         '$1.$2.$3/$4-$5'
       );
-      primarySearchQuery = `CNPJ ${formattedCnpj} OR "${formattedCnpj}" empresa site oficial`;
-      console.log('Using CNPJ-based search:', primarySearchQuery);
+      primarySearchQuery = `"${company.name}" ${company.city} ${company.state} empresa site contato email`;
+      secondaryNameSearch = `CNPJ ${formattedCnpj} OR "${formattedCnpj}" empresa`;
+      console.log('Using name-based primary search:', primarySearchQuery);
+      console.log('CNPJ secondary search:', secondaryNameSearch);
     } else {
-      primarySearchQuery = `"${company.name}" ${company.city} ${company.state} empresa site oficial contato`;
+      primarySearchQuery = `"${company.name}" ${company.city} ${company.state} empresa site oficial contato email`;
       console.log('Using name-based search:', primarySearchQuery);
     }
 
@@ -109,11 +113,8 @@ serve(async (req) => {
     const firecrawlData = await firecrawlResponse.json();
     console.log('Primary search results count:', firecrawlData.data?.length || 0);
 
-    // Step 2: Secondary search for contact info
-    const contactSearchQuery = hasCnpj 
-      ? `CNPJ ${cleanCnpj} contato email telefone endereço`
-      : `"${company.name}" ${company.city} contato email telefone`;
-    
+    // Step 2: Secondary search for contact info (always use company name)
+    const contactSearchQuery = `"${company.name}" ${company.city} ${company.state} contato email telefone whatsapp`;
     console.log('Contact search query:', contactSearchQuery);
 
     const contactResponse = await fetch('https://api.firecrawl.dev/v1/search', {
@@ -137,11 +138,8 @@ serve(async (req) => {
       console.log('Contact search results count:', contactData.data?.length || 0);
     }
 
-    // Step 3: Search for social media profiles
-    const socialSearchQuery = hasCnpj
-      ? `CNPJ ${cleanCnpj} instagram facebook linkedin`
-      : `"${company.name}" ${company.city} instagram facebook linkedin`;
-    
+    // Step 3: Search for social media profiles (always use company name)
+    const socialSearchQuery = `"${company.name}" ${company.city} instagram OR facebook OR linkedin`;
     console.log('Social media search query:', socialSearchQuery);
 
     const socialResponse = await fetch('https://api.firecrawl.dev/v1/search', {
