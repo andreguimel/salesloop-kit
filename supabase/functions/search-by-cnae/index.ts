@@ -19,65 +19,32 @@ interface SearchParams {
   emailObrigatorio?: boolean;
 }
 
-// Helper to log unauthorized access attempts
-async function logUnauthorizedAccess(
-  supabase: any,
-  req: Request,
-  reason: string,
-  partialToken?: string
-) {
-  try {
-    await supabase.rpc('log_audit_event', {
-      p_user_id: null,
-      p_action: 'unauthorized_access',
-      p_table_name: 'search-by-cnae',
-      p_record_id: null,
-      p_old_data: null,
-      p_new_data: {
-        reason,
-        partial_token: partialToken,
-        endpoint: 'search-by-cnae',
-        timestamp: new Date().toISOString()
-      },
-      p_ip_address: req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip'),
-      p_user_agent: req.headers.get('user-agent')
-    });
-    console.log('Logged unauthorized access attempt:', reason);
-  } catch (e) {
-    console.error('Failed to log unauthorized access:', e);
-  }
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Create Supabase client early for logging
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
   try {
     // Get authorization header
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
-      console.warn('Unauthorized access attempt - no auth header from IP:', req.headers.get('x-forwarded-for'));
-      await logUnauthorizedAccess(supabase, req, 'missing_auth_header');
       return new Response(
         JSON.stringify({ error: 'Authorization required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Create Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     // Get user from JWT
     const token = authHeader.replace('Bearer ', '');
-    const partialToken = token.length > 20 ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'invalid_format';
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError || !user) {
-      console.warn('Unauthorized access attempt - invalid token from IP:', req.headers.get('x-forwarded-for'), 'Error:', userError?.message);
-      await logUnauthorizedAccess(supabase, req, `invalid_token: ${userError?.message || 'no user'}`, partialToken);
+      console.error('Auth error:', userError);
       return new Response(
         JSON.stringify({ error: 'Invalid authentication' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
